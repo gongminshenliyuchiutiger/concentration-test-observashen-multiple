@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>兒童專注力測試觀察多筆紀錄系統</title>
+    <!-- 引入 Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* --- 整體頁面樣式 --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .wrapper {
+            display: flex; flex-direction: column; min-height: 100vh; max-width: 1400px; margin: 0 auto;
+        }
+        .container {
+            flex: 1; background-color: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        p.instructions { text-align: center; color: #555; margin-bottom: 25px; font-size: 0.9em; }
+
+        /* Font Awesome 圖示間距 */
+        .fas, .fa-solid { margin-right: 8px; }
+
+        /* --- 觀察資訊輸入 --- */
+        .observer-info {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px; background-color: #f8f9fa; padding: 15px; border-radius: 8px;
+        }
+        .observer-info .info-group { flex: 1; }
+        .observer-info label { display: block; font-weight: 600; color: #34495e; margin-bottom: 5px; }
+        .observer-info input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+
+        /* --- 控制面板樣式 --- */
+        .controls {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px; background-color: #ecf0f1; border-radius: 8px; flex-wrap: wrap; gap: 10px;
+        }
+        .timer-display { font-size: 2.5em; font-weight: bold; color: #3498db; font-family: 'Courier New', Courier, monospace; margin-right: 20px; display: flex; align-items: center;}
+        .status-message { font-size: 1.2em; font-weight: 500; color: #27ae60; flex-grow: 1; }
+        .control-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+        .control-buttons button {
+            padding: 10px 15px; font-size: 0.9em; border: none; border-radius: 5px; cursor: pointer; color: white; transition: background-color 0.3s; display: inline-flex; align-items: center; justify-content: center;
+        }
+        #startBtn { background-color: #2ecc71; }
+        #startBtn:hover { background-color: #27ae60; }
+        #startBtn.paused { background-color: #f39c12; }
+        #startBtn.paused:hover { background-color: #e67e22; }
+        #saveAndNextBtn { background-color: #9b59b6; }
+        #saveAndNextBtn:hover { background-color: #8e44ad; }
+        #saveAndNextBtn.update-mode { background-color: #f39c12; }
+        #saveAndNextBtn.update-mode:hover { background-color: #e67e22; }
+        #clearAllBtn { background-color: #e74c3c; }
+        #clearAllBtn:hover { background-color: #c0392b; }
+        #reportBtn { background-color: #3498db; }
+        #reportBtn:hover { background-color: #2980b9; }
+        
+        /* 【修改】為禁用的按鈕設定更具體的樣式，以覆蓋 ID 樣式 */
+        button:disabled,
+        #saveAndNextBtn:disabled,
+        #reportBtn:disabled {
+            background-color: #bdc3c7 !important; /* 使用 !important 確保最高優先級 */
+            cursor: not-allowed;
+        }
+
+
+        /* --- 已完成觀察列表 --- */
+        .completed-sessions { margin-top: 20px; background-color: #f8f9fa; padding: 15px; border-radius: 8px;}
+        .completed-sessions h3 { margin-top: 0; color: #34495e; }
+        #completedSessionsList { list-style-type: none; padding-left: 0; }
+        #completedSessionsList li { background-color: #e8f4fd; margin-bottom: 8px; padding: 10px; padding-right: 40px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 0.95em; cursor: pointer; border: 2px solid transparent; transition: border-color 0.3s, background-color 0.3s; position: relative; }
+        #completedSessionsList li:hover { background-color: #d6eaf8; }
+        #completedSessionsList .session-time { color: #555; font-size: 0.9em; flex-shrink: 0; margin-left: 10px;}
+        #completedSessionsList .session-info { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #completedSessionsList .editing-session { border-color: #3498db; background-color: #cde7f9; font-weight: bold; }
+        .delete-session-btn { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); background: none; border: none; color: #e74c3c; font-size: 1.4em; cursor: pointer; padding: 2px 5px; line-height: 1; opacity: 0.7; transition: opacity 0.2s; }
+        .delete-session-btn:hover { opacity: 1; }
+        .delete-session-btn .fa-solid { margin-right: 0; }
+
+        /* --- 觀察記錄表格樣式 --- */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; }
+        th, td { border: 1px solid #bdc3c7; padding: 12px 4px; text-align: center; word-wrap: break-word; }
+        th { background-color: #ecf0f1; font-weight: 600; color: #2c3e50; font-size: 0.9em; }
+        th.behavior-label { width: 15%; }
+        td.behavior-label { text-align: left; font-weight: 500; background-color: #f8f9fa; white-space: normal; padding-left: 8px; }
+        td.data-cell { cursor: pointer; font-size: 1.1em; font-weight: bold; color: #34495e; user-select: none; transition: background-color 0.2s; }
+        td.data-cell:hover { background-color: #e0e9f0; }
+        td.total-cell { font-weight: bold; background-color: #e8f4fd; }
+        .current-column { background-color: #fffbe0 !important; }
+
+        /* --- 整體備註區 --- */
+        .general-notes { margin-top: 25px; }
+        .general-notes label { display: block; font-weight: 600; color: #2c3e50; margin-bottom: 10px; }
+        .general-notes textarea { width: 100%; min-height: 100px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; box-sizing: border-box; resize: vertical; }
+
+        /* --- 頁尾 --- */
+        footer { text-align: center; margin-top: 30px; padding: 15px; color: #7f8c8d; font-size: 0.9em; }
+
+        /* --- 報告彈出視窗 --- */
+        .report-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px; box-sizing: border-box;
+        }
+        .report-content {
+            background-color: white; padding: 30px; border-radius: 10px; width: 95%; max-width: 1400px; max-height: 90vh; overflow-y: auto; box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        #reportHeader { text-align: center; margin-bottom: 25px; }
+        #reportHeader h2 { margin-top: 0; margin-bottom: 10px; color: #2c3e50; }
+        #reportHeader p { margin: 5px 0; color: #555; }
+        .report-session-block { margin-bottom: 40px; border: 1px solid #ddd; padding: 20px; border-radius: 8px; background-color: #fdfdfd;}
+        .report-session-block h3 { color: #34495e; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; margin-top: 0; }
+        .report-detailed-table table { width: 100%; font-size: 0.85em; border-collapse: collapse; margin-top: 15px; table-layout: fixed; }
+        .report-detailed-table th, .report-detailed-table td { border: 1px solid #ccc; padding: 5px 2px; text-align: center; }
+        .report-detailed-table th { background-color: #f2f2f2; }
+        .report-notes-display { margin-top: 20px; }
+        .report-notes-display h4 { color: #34495e; margin-bottom: 8px; }
+        .report-notes-display textarea { width: 100%; min-height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; box-sizing: border-box; background-color: #f8f9fa; resize: vertical; }
+        .report-buttons { text-align: right; margin-top: 20px; }
+        .report-buttons button { padding: 10px 20px; font-size: 1em; border: none; border-radius: 5px; cursor: pointer; color: white; margin-left: 10px; }
+        #exportPdfBtn { background-color: #c0392b; }
+        #exportTxtBtn { background-color: #2980b9; }
+        #closeReportBtn { background-color: #7f8c8d; }
+        
+        /* --- 使用說明彈窗 --- */
+        .help-btn { position: fixed; top: 20px; right: 20px; width: 50px; height: 50px; background-color: #3498db; color: white; border: none; border-radius: 50%; font-size: 1.6em; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; z-index: 1001; transition: background-color 0.3s, transform 0.2s; }
+        .help-btn .fa-solid { margin-right: 0; }
+        .help-btn:hover { background-color: #2980b9; transform: scale(1.1); }
+        .help-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 500px; min-width: 350px; height: 60vh; min-height: 400px; background-color: white; border-radius: 10px; box-shadow: 0 5px 25px rgba(0,0,0,0.3); z-index: 1010; flex-direction: column; overflow: hidden; }
+        .help-modal-header { padding: 10px 15px; background-color: #34495e; color: white; cursor: move; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+        .help-modal-header span { font-weight: 600; }
+        .close-modal-btn { background: none; border: none; color: white; font-size: 1.8em; line-height: 1; cursor: pointer; opacity: 0.8; padding: 0 5px; }
+        .close-modal-btn:hover { opacity: 1; }
+        .help-modal-content { padding: 20px; flex-grow: 1; overflow-y: auto; }
+        .help-modal-content h4 { color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px; margin-top: 0; }
+        .help-modal-content ul { padding-left: 20px; color: #555; line-height: 1.6; }
+        .help-modal-content li { margin-bottom: 10px; }
+        .help-modal-content code { background-color: #ecf0f1; padding: 2px 5px; border-radius: 3px; color: #c0392b; }
+        .resize-handle { position: absolute; bottom: 0; right: 0; width: 15px; height: 15px; cursor: se-resize; background: repeating-linear-gradient(-45deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 2px, transparent 2px, transparent 4px); }
+
+        /* --- 列印專用樣式 (最終寬度優化) --- */
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 5mm;
+            }
+            body, .wrapper, .container { padding: 0; margin: 0; background-color: #fff; box-shadow: none; }
+            body > *:not(.report-overlay) { display: none; }
+            .report-overlay { position: static; display: block !important; width: 100%; height: auto; background: none; padding: 0; margin: 0; overflow: visible; }
+            .report-content { box-shadow: none; border: none; padding: 0; margin: 0; width: 100%; max-width: 100%; max-height: none; overflow: visible; border-radius: 0; }
+            .report-buttons { display: none; }
+            .report-session-block { page-break-inside: avoid; margin-bottom: 10px; border: 1px solid #ccc; padding: 5px; }
+            #reportHeader { margin-bottom: 10px; }
+            #reportHeader h2 { font-size: 14pt; }
+            #reportHeader h2 .fa-solid, .report-session-block h3 .fa-solid { display: none; }
+            .report-detailed-table table { font-size: 6.5pt; width: 100%; table-layout: fixed; }
+            .report-detailed-table th, .report-detailed-table td { padding: 2px 0; border: 1px solid #666;}
+            .report-detailed-table th.behavior-label-print { width: 14%; }
+            .report-detailed-table th.total-cell-print { width: 6%; }
+            .report-notes-display textarea { font-size: 7pt; min-height: 30px; border: 1px solid #ccc !important; background-color: #fafafa !important; color: #000 !important; }
+            tr, li { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <div class="container" id="main-container">
+            <h1><i class="fa-solid fa-clipboard-list"></i>兒童專注力測試觀察多筆記錄系統</h1>
+            <p class="instructions">
+                點擊畫面右上方「使用說明」懸浮按鈕以熟悉操作
+            </p>
+
+            <div class="observer-info">
+                <div class="info-group">
+                    <label for="observerName"><i class="fa-solid fa-user-pen"></i>觀察人姓名</label>
+                    <input type="text" id="observerName" placeholder="請輸入觀察人姓名">
+                </div>
+                <div class="info-group">
+                    <label for="subjectName"><i class="fa-solid fa-child"></i>被觀察人姓名</label>
+                    <input type="text" id="subjectName" placeholder="請輸入被觀察人姓名">
+                </div>
+                <div class="info-group">
+                    <label for="activityName"><i class="fa-solid fa-puzzle-piece"></i>進行的活動/課程</label>
+                    <input type="text" id="activityName" placeholder="例如: 公民課-概念釐清">
+                </div>
+            </div>
+
+            <div class="controls">
+                <div id="timerDisplay" class="timer-display"><i class="fa-solid fa-hourglass-half"></i>00:30</div>
+                <div id="statusMessage" class="status-message">準備開始</div>
+                <div class="control-buttons">
+                    <button id="startBtn"><span id="startBtnIcon"><i class="fa-solid fa-play"></i></span><span id="startBtnText">開始觀察</span></button>
+                    <button id="saveAndNextBtn"><i class="fa-solid fa-floppy-disk"></i><span id="saveBtnText">儲存本次</span></button>
+                    <button id="reportBtn" disabled><i class="fa-solid fa-file-invoice"></i>產生觀察報告</button>
+                    <button id="clearAllBtn"><i class="fa-solid fa-trash-can"></i>全部清空</button>
+                </div>
+            </div>
+            
+            <div class="completed-sessions" id="completedSessionsContainer" style="display: none;">
+                <h3><i class="fa-solid fa-list-check"></i>已完成的觀察列表 (點擊可編輯)</h3>
+                <ul id="completedSessionsList"></ul>
+            </div>
+
+            <div class="table-container">
+                <table id="observationTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="general-notes">
+                <label for="generalNotes"><i class="fa-solid fa-feather-pointed"></i>本次觀察備註</label>
+                <textarea id="generalNotes" placeholder="記錄本次10分鐘觀察的整體狀況、環境因素或其他值得注意的事件..."></textarea>
+            </div>
+        </div>
+        
+        <footer>
+            Copyright © Liyuchiutiger Gongminshen
+        </footer>
+    </div>
+
+    <!-- 報告彈出視窗 -->
+    <div id="reportOverlay" class="report-overlay">
+        <div id="reportContent" class="report-content">
+            <!-- 報告內容將由 JS 動態生成到這裡 -->
+        </div>
+    </div>
+    
+    <!-- 使用說明按鈕 -->
+    <button id="helpBtn" class="help-btn" title="使用說明">
+        <i class="fa-solid fa-book"></i>
+    </button>
+    
+    <!-- 使用說明彈出視窗 -->
+    <div id="helpModal" class="help-modal">
+        <div class="help-modal-header" id="helpModalHeader">
+            <span><i class="fa-solid fa-book"></i> 使用說明</span>
+            <button class="close-modal-btn" id="closeHelpModalBtn" title="關閉">&times;</button>
+        </div>
+        <div class="help-modal-content">
+            <h4>基本操作</h4>
+            <ul>
+                <li>在上方欄位輸入「觀察人」、「被觀察人」與「活動/課程」名稱。</li>
+                <li>此視窗可以按住頂部標題欄進行拖曳，也可以拖動右下角調整大小。</li>
+            </ul>
+            <h4>計時與記錄</h4>
+            <ul>
+                <li>點擊 <i class="fa-solid fa-play"></i> <strong>開始觀察</strong> 按鈕以啟動計時器。點擊後，「儲存本次」按鈕才會啟用。</li>
+                <li>在對應的行為格子中，<code>滑鼠左鍵點擊</code> 增加次數，<code>滑鼠右鍵點擊</code> 減少次數。</li>
+            </ul>
+            <h4>多筆記錄與編輯</h4>
+            <ul>
+                <li>點擊 <i class="fa-solid fa-floppy-disk"></i> <strong>儲存本次</strong>，會儲存目前資料並清空表格以供下次記錄。</li>
+                <li>點擊下方「已完成列表」中的任一項目，即可將該筆舊資料**載入回來進行編輯**。</li>
+                <li>編輯舊資料時，儲存按鈕會變為 <i class="fa-solid fa-floppy-disk"></i> <strong>儲存更新記錄</strong> (橘色按鈕)。</li>
+                <li>點擊列表項目右側的 <i class="fa-solid fa-trash-can" ></i> 按鈕，可以**刪除**特定的觀察記錄。</li>
+            </ul>
+             <h4>報告功能</h4>
+            <ul>
+                <li>報告中可**直接編輯**每一筆記錄的備註，關閉視窗時會自動保存。</li>
+                <li>報告可匯出為 PDF (建議**橫向列印**) 或 TXT。</li>
+            </ul>
+        </div>
+        <div class="resize-handle" id="resizeHandle"></div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM 元素 ---
+        const observerNameInput = document.getElementById('observerName');
+        const subjectNameInput = document.getElementById('subjectName');
+        const activityNameInput = document.getElementById('activityName');
+        const startBtn = document.getElementById('startBtn');
+        const saveAndNextBtn = document.getElementById('saveAndNextBtn');
+        const saveBtnText = document.getElementById('saveBtnText');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const reportBtn = document.getElementById('reportBtn');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const statusMessage = document.getElementById('statusMessage');
+        const tableHeader = document.querySelector('#observationTable thead');
+        const tableBody = document.querySelector('#observationTable tbody');
+        const generalNotesTextarea = document.getElementById('generalNotes');
+        const reportOverlay = document.getElementById('reportOverlay');
+        const reportContent = document.getElementById('reportContent');
+        const startBtnIcon = document.getElementById('startBtnIcon');
+        const startBtnText = document.getElementById('startBtnText');
+        const completedSessionsContainer = document.getElementById('completedSessionsContainer');
+        const completedSessionsList = document.getElementById('completedSessionsList');
+        
+        const helpBtn = document.getElementById('helpBtn');
+        const helpModal = document.getElementById('helpModal');
+        const closeHelpModalBtn = document.getElementById('closeHelpModalBtn');
+
+        // --- 狀態變數 ---
+        const behaviors = ['Off task (分心)', 'Fidget (坐不住/扭動)', 'Out of seat (離開座位)', 'Vocalize (出聲)', 'Plays with objects (玩東西)'];
+        const timeIntervals = [
+            '30s', '1m', '1.5m', '2m', '2.5m', '3m', '3.5m', '4m', '4.5m', '5m', 
+            '5.5m', '6m', '6.5m', '7m', '7.5m', '8m', '8.5m', '9m', '9.5m', '10m'
+        ];
+        const TOTAL_INTERVALS = 20;
+        const INTERVAL_DURATION = 30;
+
+        let allSessionsData = [];
+        let data = [];
+        let timerId = null;
+        let isRunning = false;
+        let isPaused = false;
+        let currentIntervalIndex = 0;
+        let timeLeft = INTERVAL_DURATION;
+        let sessionStartTime = null;
+        let currentEditingIndex = null;
+
+        function initializeCurrentSession() {
+            tableHeader.innerHTML = '';
+            tableBody.innerHTML = '';
+            data = Array(behaviors.length).fill(0).map(() => Array(TOTAL_INTERVALS).fill(0));
+
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = `<th class="behavior-label">行為項目</th>`;
+            timeIntervals.forEach(interval => headerRow.innerHTML += `<th>${interval}</th>`);
+            headerRow.innerHTML += `<th>總次數</th>`;
+            tableHeader.appendChild(headerRow);
+
+            behaviors.forEach((behavior, rowIndex) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td class="behavior-label">${behavior}</td>`;
+                for (let colIndex = 0; colIndex < TOTAL_INTERVALS; colIndex++) {
+                    row.innerHTML += `<td class="data-cell" id="cell-${rowIndex}-${colIndex}" data-row="${rowIndex}" data-col="${colIndex}">0</td>`;
+                }
+                row.innerHTML += `<td class="total-cell" id="total-${rowIndex}">0</td>`;
+                tableBody.appendChild(row);
+            });
+            
+            generalNotesTextarea.value = '';
+            activityNameInput.value = '';
+
+            addCellEventListeners();
+            resetTimerUI();
+            
+            currentEditingIndex = null;
+            updateSaveButtonUI();
+            saveAndNextBtn.disabled = true;
+        }
+        
+        function updateSaveButtonUI() {
+            if (currentEditingIndex !== null) {
+                saveBtnText.textContent = '儲存更新記錄';
+                saveAndNextBtn.classList.add('update-mode');
+                saveAndNextBtn.querySelector('.fa-solid').className = 'fa-solid fa-floppy-disk';
+            } else {
+                saveBtnText.textContent = '儲存本次';
+                saveAndNextBtn.classList.remove('update-mode');
+                saveAndNextBtn.querySelector('.fa-solid').className = 'fa-solid fa-floppy-disk';
+            }
+        }
+
+        function addCellEventListeners() {
+            document.querySelectorAll('.data-cell').forEach(cell => {
+                cell.addEventListener('click', (e) => handleCellInteraction(e, 'increase'));
+                cell.addEventListener('contextmenu', (e) => { e.preventDefault(); handleCellInteraction(e, 'decrease'); });
+            });
+        }
+        
+        function masterReset() {
+            if (confirm('確定要清除所有已儲存的記錄、姓名和活動嗎？此操作將開始一個全新的課堂記錄。')) {
+                allSessionsData = [];
+                observerNameInput.value = '';
+                subjectNameInput.value = '';
+                updateCompletedSessionsUI();
+                initializeCurrentSession();
+            }
+        }
+
+        function resetTimerUI() {
+            isRunning = false; isPaused = false; currentIntervalIndex = 0; timeLeft = INTERVAL_DURATION; sessionStartTime = null;
+            clearInterval(timerId); timerId = null;
+            timerDisplay.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> 00:30`;
+            timerDisplay.style.color = '#3498db';
+            statusMessage.textContent = '準備開始';
+            startBtnText.textContent = '開始觀察';
+            startBtnIcon.innerHTML = '<i class="fa-solid fa-play"></i>';
+            startBtn.classList.remove('paused');
+            startBtn.disabled = false;
+            document.querySelectorAll('.current-column').forEach(el => el.classList.remove('current-column'));
+        }
+
+        function handleCellInteraction(event, action) {
+            const cell = event.target;
+            const rowIndex = parseInt(cell.dataset.row);
+            const colIndex = parseInt(cell.dataset.col);
+            if (isNaN(rowIndex) || isNaN(colIndex)) return;
+
+            if (action === 'increase') data[rowIndex][colIndex]++;
+            else if (action === 'decrease' && data[rowIndex][colIndex] > 0) data[rowIndex][colIndex]--;
+            
+            cell.textContent = data[rowIndex][colIndex];
+            updateTotal(rowIndex);
+        }
+
+        function updateTotal(rowIndex) {
+            const total = data[rowIndex].reduce((sum, current) => sum + current, 0);
+            document.getElementById(`total-${rowIndex}`).textContent = total;
+        }
+
+        function handleSaveAndNext() {
+            const sessionData = {
+                activityName: activityNameInput.value.trim() || '未指定活動',
+                startTime: (currentEditingIndex !== null) ? allSessionsData[currentEditingIndex].startTime : (sessionStartTime || new Date()),
+                data: JSON.parse(JSON.stringify(data)),
+                generalNotes: generalNotesTextarea.value.trim()
+            };
+
+            if (currentEditingIndex !== null) {
+                allSessionsData[currentEditingIndex] = sessionData;
+                alert(`觀察 #${currentEditingIndex + 1} 已更新！`);
+            } else {
+                allSessionsData.push(sessionData);
+                alert('本次觀察已儲存！');
+            }
+            
+            updateCompletedSessionsUI();
+            initializeCurrentSession();
+        }
+        
+        function handleSessionSelect(event) {
+            const li = event.currentTarget;
+            const indexToLoad = parseInt(li.dataset.sessionIndex);
+            
+            currentEditingIndex = indexToLoad;
+            const sessionToLoad = allSessionsData[indexToLoad];
+            
+            activityNameInput.value = sessionToLoad.activityName;
+            generalNotesTextarea.value = sessionToLoad.generalNotes;
+            data = JSON.parse(JSON.stringify(sessionToLoad.data));
+            
+            behaviors.forEach((_, rowIndex) => {
+                sessionToLoad.data[rowIndex].forEach((count, colIndex) => {
+                    document.getElementById(`cell-${rowIndex}-${colIndex}`).textContent = count;
+                });
+                updateTotal(rowIndex);
+            });
+
+            resetTimerUI();
+            updateCompletedSessionsUI();
+            updateSaveButtonUI();
+            saveAndNextBtn.disabled = false;
+        }
+        
+        function handleDeleteSession(event) {
+            event.stopPropagation();
+            const button = event.currentTarget;
+            const indexToDelete = parseInt(button.dataset.sessionIndex);
+
+            if (confirm(`您確定要刪除「${allSessionsData[indexToDelete].activityName}」這筆觀察記錄嗎？此操作無法復原。`)) {
+                allSessionsData.splice(indexToDelete, 1);
+                
+                if (currentEditingIndex === indexToDelete) {
+                    initializeCurrentSession();
+                } else {
+                    if (currentEditingIndex !== null && currentEditingIndex > indexToDelete) {
+                        currentEditingIndex--;
+                    }
+                    updateCompletedSessionsUI();
+                }
+            }
+        }
+
+        function updateCompletedSessionsUI() {
+            completedSessionsList.innerHTML = '';
+            if (allSessionsData.length > 0) {
+                completedSessionsContainer.style.display = 'block';
+                reportBtn.disabled = false;
+                
+                allSessionsData.forEach((session, index) => {
+                    const li = document.createElement('li');
+                    li.dataset.sessionIndex = index;
+                    if (index === currentEditingIndex) li.classList.add('editing-session');
+                    
+                    const sessionInfo = document.createElement('span');
+                    sessionInfo.className = 'session-info';
+                    sessionInfo.innerHTML = `<i class="fa-solid fa-check"></i> <b>第 ${index + 1} 次:</b> ${session.activityName}`;
+                    
+                    const sessionTime = document.createElement('span');
+                    sessionTime.className = 'session-time';
+                    sessionTime.textContent = session.startTime.toLocaleString('zh-TW');
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-session-btn';
+                    deleteBtn.title = '刪除此記錄';
+                    deleteBtn.dataset.sessionIndex = index;
+                    deleteBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+                    
+                    li.appendChild(sessionInfo);
+                    li.appendChild(sessionTime);
+                    li.appendChild(deleteBtn);
+                    
+                    li.addEventListener('click', handleSessionSelect);
+                    deleteBtn.addEventListener('click', handleDeleteSession);
+                    
+                    completedSessionsList.appendChild(li);
+                });
+            } else {
+                completedSessionsContainer.style.display = 'none';
+                reportBtn.disabled = true;
+            }
+        }
+        
+        function syncReportNotes() {
+            allSessionsData.forEach((_, index) => {
+                const textarea = document.getElementById(`report-note-${index}`);
+                if (textarea) allSessionsData[index].generalNotes = textarea.value;
+            });
+        }
+
+        function generateReport() {
+            const observerName = observerNameInput.value.trim() || '（未填寫）';
+            const subjectName = subjectNameInput.value.trim() || '（未填寫）';
+            const reportDate = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' });
+
+            let allSessionsHTML = '';
+            allSessionsData.forEach((session, index) => {
+                let detailedTableHTML = `<div class="report-detailed-table"><table border="1"><thead><tr><th class="behavior-label-print">行為項目</th>`;
+                timeIntervals.forEach(interval => detailedTableHTML += `<th>${interval}</th>`);
+                detailedTableHTML += `<th class="total-cell-print">總次數</th></tr></thead><tbody>`;
+                behaviors.forEach((behavior, rowIndex) => {
+                    detailedTableHTML += `<tr><td>${behavior}</td>`;
+                    let total = 0;
+                    session.data[rowIndex].forEach(count => { detailedTableHTML += `<td>${count}</td>`; total += count; });
+                    detailedTableHTML += `<td><b>${total}</b></td></tr>`;
+                });
+                detailedTableHTML += `</tbody></table></div>`;
+
+                let notesHTML = `
+                    <div class="report-notes-display">
+                        <h4><i class="fa-solid fa-feather-pointed"></i>該次觀察備註 (可編輯)</h4>
+                        <textarea id="report-note-${index}">${session.generalNotes || ''}</textarea>
+                    </div>`;
+
+                allSessionsHTML += `
+                    <div class="report-session-block">
+                        <h3><i class="fa-solid fa-clipboard"></i> 觀察 #${index + 1}: ${session.activityName}</h3>
+                        <p style="margin-bottom: 15px; color: #555;"><b>開始時間:</b> ${session.startTime.toLocaleString('zh-TW')}</p>
+                        ${detailedTableHTML}
+                        ${notesHTML}
+                    </div>`;
+            });
+
+            const fullReportHTML = `
+                <div id="reportHeader">
+                    <h2><i class="fa-solid fa-file-invoice"></i>兒童專注力測試多筆綜合觀察報告</h2>
+                    <p><b><i class="fa-solid fa-child"></i>被觀察人:</b> ${subjectName}</p>
+                    <p><b><i class="fa-solid fa-user-pen"></i>觀察人:</b> ${observerName}</p>
+                    <p><b><i class="fa-solid fa-calendar-days"></i>報告產生日期:</b> ${reportDate}</p>
+                </div>
+                ${allSessionsHTML}
+                <div class="report-buttons">
+                    <button id="exportTxtBtn"><i class="fa-solid fa-file-lines"></i>匯出為 TXT</button>
+                    <button id="exportPdfBtn"><i class="fa-solid fa-file-pdf"></i>匯出為 PDF</button>
+                    <button id="closeReportBtn"><i class="fa-solid fa-xmark"></i>關閉</button>
+                </div>
+            `;
+            
+            reportContent.innerHTML = fullReportHTML;
+            reportOverlay.style.display = 'flex';
+            document.getElementById('exportTxtBtn').addEventListener('click', () => { syncReportNotes(); exportToTxt(); });
+            document.getElementById('exportPdfBtn').addEventListener('click', () => { syncReportNotes(); window.print(); });
+            document.getElementById('closeReportBtn').addEventListener('click', () => { syncReportNotes(); reportOverlay.style.display = 'none'; updateCompletedSessionsUI(); });
+        }
+
+        function exportToTxt() {
+            if (typeof saveAs === 'undefined') {
+                alert('檔案儲存工具載入失敗，請檢查網路連線並刷新頁面重試。');
+                return;
+            }
+            const subjectName = subjectNameInput.value.trim() || '觀察報告';
+            const observerName = observerNameInput.value.trim() || '（未填寫）';
+            const reportDate = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' });
+            
+            let textContent = '兒童專注力測試多筆綜合觀察報告\n';
+            textContent += '========================================\n';
+            textContent += `被觀察人: ${subjectName}\n`;
+            textContent += `觀察人: ${observerName}\n`;
+            textContent += `報告產生日期: ${reportDate}\n`;
+            textContent += '========================================\n\n';
+
+            const padEnd = (str, length) => {
+                let s = String(str);
+                const chineseChars = s.match(/[\u4e00-\u9fa5]/g) || [];
+                const effectiveLength = s.length + (chineseChars ? chineseChars.length : 0);
+                const paddingNeeded = length > effectiveLength ? length - effectiveLength : 0;
+                return s + ' '.repeat(paddingNeeded);
+            };
+            const padStart = (str, length) => {
+                let s = String(str);
+                const paddingNeeded = length > s.length ? length - s.length : 0;
+                return ' '.repeat(paddingNeeded) + s;
+            }
+
+            allSessionsData.forEach((session, index) => {
+                textContent += `\n--- 觀察 #${index + 1}: ${session.activityName} ---\n`;
+                textContent += `開始時間: ${session.startTime.toLocaleString('zh-TW')}\n\n`;
+                
+                let tableHeaderTxt = padEnd('行為項目', 25);
+                timeIntervals.forEach(interval => { tableHeaderTxt += padStart(interval, 5); });
+                tableHeaderTxt += padStart('總次數', 8);
+                textContent += tableHeaderTxt + '\n';
+                textContent += '-'.repeat(tableHeaderTxt.length - 10) + '\n';
+
+                behaviors.forEach((behavior, rowIndex) => {
+                    let rowTxt = padEnd(behavior, 25);
+                    let total = 0;
+                    session.data[rowIndex].forEach(count => { rowTxt += padStart(count, 5); total += count; });
+                    rowTxt += padStart(total, 8);
+                    textContent += rowTxt + '\n';
+                });
+                
+                textContent += `\n該次觀察備註:\n${session.generalNotes || '(無備註)'}\n`;
+                textContent += '----------------------------------------\n';
+            });
+            
+            const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+            saveAs(blob, `${subjectName}_多筆綜合觀察報告.txt`);
+        }
+
+        function handleStartPauseResume() {
+            if (!isRunning) {
+                if (currentEditingIndex !== null) {
+                    if (!confirm('您正在編輯舊記錄。開始新的計時將會清空目前表格，並切換回新增模式。確定要開始嗎？')) {
+                        return;
+                    }
+                    initializeCurrentSession();
+                }
+                isRunning = true;
+                sessionStartTime = new Date();
+                saveAndNextBtn.disabled = false;
+                startBtnText.textContent = '暫停';
+                startBtnIcon.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                statusMessage.textContent = `進行中: 區間 1 / ${TOTAL_INTERVALS}`;
+                highlightCurrentColumn();
+                timerId = setInterval(updateTimer, 1000);
+            } else {
+                if (isPaused) {
+                    isPaused = false;
+                    startBtnText.textContent = '暫停';
+                    startBtnIcon.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                    startBtn.classList.remove('paused');
+                    timerId = setInterval(updateTimer, 1000);
+                    statusMessage.textContent = `進行中: 區間 ${currentIntervalIndex + 1} / ${TOTAL_INTERVALS}`;
+                } else {
+                    isPaused = true;
+                    clearInterval(timerId);
+                    timerId = null;
+                    startBtnText.textContent = '繼續';
+                    startBtnIcon.innerHTML = '<i class="fa-solid fa-play"></i>';
+                    startBtn.classList.add('paused');
+                    statusMessage.textContent = '觀察已暫停';
+                }
+            }
+        }
+        function updateTimer() {
+            timeLeft--;
+            timerDisplay.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> 00:${timeLeft.toString().padStart(2, '0')}`;
+            if (timeLeft <= 5 && timeLeft > 0) timerDisplay.style.color = '#f39c12';
+
+            if (timeLeft <= 0) {
+                currentIntervalIndex++;
+                if (currentIntervalIndex >= TOTAL_INTERVALS) {
+                    endObservation();
+                } else {
+                    timeLeft = INTERVAL_DURATION;
+                    timerDisplay.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> 00:${timeLeft}`;
+                    timerDisplay.style.color = '#3498db';
+                    highlightCurrentColumn();
+                    statusMessage.textContent = `進行中: 區間 ${currentIntervalIndex + 1} / ${TOTAL_INTERVALS}`;
+                }
+            }
+        }
+        function highlightCurrentColumn() {
+            document.querySelectorAll('.current-column').forEach(el => el.classList.remove('current-column'));
+            if (currentIntervalIndex < TOTAL_INTERVALS) {
+                for (let i = 0; i < behaviors.length; i++) {
+                    const cell = document.getElementById(`cell-${i}-${currentIntervalIndex}`);
+                    if (cell) cell.classList.add('current-column');
+                }
+            }
+        }
+        function endObservation() {
+            clearInterval(timerId);
+            timerId = null;
+            isRunning = false;
+            statusMessage.textContent = '觀察完成！請儲存本次記錄。';
+            timerDisplay.innerHTML = `<i class="fa-solid fa-check-double"></i> 完成!`;
+            timerDisplay.style.color = '#27ae60';
+            startBtn.disabled = true;
+            document.querySelectorAll('.current-column').forEach(el => el.classList.remove('current-column'));
+        }
+        
+        function setupModalLogic() {
+            const helpModalHeader = document.getElementById('helpModalHeader');
+            const resizeHandle = document.getElementById('resizeHandle');
+            let isDragging = false, offsetX, offsetY;
+            helpModalHeader.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                isDragging = true;
+                const rect = helpModal.getBoundingClientRect();
+                helpModal.style.transform = 'none';
+                helpModal.style.left = `${rect.left}px`;
+                helpModal.style.top = `${rect.top}px`;
+                offsetX = e.clientX - rect.left;
+                offsetY = e.clientY - rect.top;
+                document.body.style.userSelect = 'none';
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+            function onMouseMove(e) { if (!isDragging) return; helpModal.style.left = `${e.clientX - offsetX}px`; helpModal.style.top = `${e.clientY - offsetY}px`; }
+            function onMouseUp() { isDragging = false; document.body.style.userSelect = ''; document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
+            let isResizing = false;
+            resizeHandle.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                e.preventDefault();
+                document.body.style.userSelect = 'none';
+                document.addEventListener('mousemove', onResizeMove);
+                document.addEventListener('mouseup', onResizeUp);
+            });
+            function onResizeMove(e) { if (!isResizing) return; const rect = helpModal.getBoundingClientRect(); helpModal.style.width = `${e.clientX - rect.left}px`; helpModal.style.height = `${e.clientY - rect.top}px`; }
+            function onResizeUp() { isResizing = false; document.body.style.userSelect = ''; document.removeEventListener('mousemove', onResizeMove); document.removeEventListener('mouseup', onResizeUp); }
+        }
+
+        // --- Event Listeners and Initializer ---
+        startBtn.addEventListener('click', handleStartPauseResume);
+        saveAndNextBtn.addEventListener('click', handleSaveAndNext);
+        clearAllBtn.addEventListener('click', masterReset);
+        reportBtn.addEventListener('click', generateReport);
+        helpBtn.addEventListener('click', () => { document.getElementById('helpModal').style.display = 'flex'; });
+        closeHelpModalBtn.addEventListener('click', () => { document.getElementById('helpModal').style.display = 'none'; });
+        
+        initializeCurrentSession();
+        setupModalLogic();
+    });
+    </script>
+</body>
+</html>
