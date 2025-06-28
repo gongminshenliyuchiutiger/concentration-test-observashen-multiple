@@ -79,13 +79,13 @@
         .delete-session-btn:hover { opacity: 1; }
         .delete-session-btn .fa-solid { margin-right: 0; }
 
-        /* --- 【主要修改】觀察記錄表格樣式 (桌機版) --- */
+        /* --- 觀察記錄表格樣式 (桌機版) --- */
         .table-container { 
-            overflow-x: auto; /* 桌機版保持水平滾動 */
+            overflow-x: auto; 
         }
         table { 
             width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; 
-            min-width: 1200px; /* 設定最小寬度，觸發水平滾動 */
+            min-width: 1200px;
         }
         th, td { 
             border: 1px solid #bdc3c7; padding: 12px 4px; text-align: center; word-wrap: break-word; 
@@ -155,7 +155,7 @@
         .help-modal-content code { background-color: #ecf0f1; padding: 2px 5px; border-radius: 3px; color: #c0392b; }
         .resize-handle { position: absolute; bottom: 0; right: 0; width: 15px; height: 15px; cursor: se-resize; background: repeating-linear-gradient(-45deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 2px, transparent 2px, transparent 4px); }
 
-        /* --- 【主要修改】響應式設計 (手機優先的表格處理) --- */
+        /* --- 響應式設計 --- */
         @media (max-width: 768px) {
             body { padding: 10px; }
             .container { padding: 15px; }
@@ -164,33 +164,53 @@
             .controls { flex-direction: column; align-items: stretch; text-align: center; }
             .control-buttons { justify-content: space-around; }
 
-            /* 手機列表項目垂直排列 */
             #completedSessionsList li {
                 flex-direction: column; align-items: flex-start; gap: 5px;
             }
             #completedSessionsList .session-time { margin-left: 0; }
             
-            /* 移除滾動條，準備縮小表格 */
             .table-container {
                 overflow-x: visible;
             }
-            /* 縮小表格以適應螢幕 */
             #observationTable {
                 min-width: 100%;
-                font-size: 0.7em; /* 大幅縮小字體 */
+                font-size: 0.7em;
             }
             #observationTable th, #observationTable td {
-                padding: 6px 2px; /* 減少內邊距 */
+                padding: 6px 2px;
             }
             #observationTable th:first-child, #observationTable td.behavior-label {
-                width: 28%; /* 給行為標籤更多空間 */
-                font-size: 0.9em; /* 行為標籤字體可稍大 */
+                width: 28%; font-size: 0.9em;
             }
             #observationTable th:last-child, #observationTable td.total-cell {
-                width: 12%; /* 給總次數更多空間 */
+                width: 12%;
             }
 
-            /* 彈窗優化 */
+            /* --- 報告彈窗響應式調整 --- */
+            .report-overlay { padding: 10px; }
+            .report-content { padding: 15px; }
+            #reportHeader h2 { font-size: 1.3em; }
+            .report-session-block { padding: 15px; }
+            .report-session-block h3 { font-size: 1.1em; }
+            
+            /* 【核心修改】讓報告表格可以水平滾動 */
+            .report-detailed-table {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch; /* 優化iOS滾動體驗 */
+            }
+            .report-detailed-table table {
+                min-width: 900px; /* 設定最小寬度觸發滾動 */
+                font-size: 0.8em; /* 維持可讀的字體大小 */
+            }
+            /* 還原/微調內距 */
+            .report-detailed-table th, .report-detailed-table td {
+                padding: 5px 2px;
+            }
+            .report-notes-display textarea {
+                font-size: 0.9em;
+            }
+
+            /* --- 彈窗通用優化 --- */
             .help-modal { width: 95%; height: 75vh; }
             .report-buttons { text-align: center; }
             .report-buttons button { width: 100%; margin: 5px 0; }
@@ -198,16 +218,16 @@
 
         @media (max-width: 480px) {
             .control-buttons button { margin-bottom: 5px; }
-             /* 在更小的螢幕上，進一步縮小表格字體 */
             #observationTable {
                 font-size: 0.6em;
             }
             #observationTable th, #observationTable td {
                 padding: 4px 1px;
             }
+            /* 【移除】不再需要針對更小螢幕縮小報告表格字體 */
         }
 
-        /* --- 列印專用樣式 --- */
+        /* --- 列印專用樣式 (不受螢幕響應式影響) --- */
         @media print {
             @page {
                 size: A4 landscape;
@@ -224,7 +244,7 @@
             #reportHeader h2 .fa-solid, .report-session-block h3 .fa-solid { display: none; }
             .report-detailed-table table { font-size: 6.5pt; width: 100%; table-layout: fixed; }
             .report-detailed-table th, .report-detailed-table td { padding: 2px 0; border: 1px solid #666;}
-            .report-detailed-table th:first-child { width: 18%; text-align: left; padding-left: 2px; } /* Print style adjustment */
+            .report-detailed-table th:first-child { width: 18%; text-align: left; padding-left: 2px; }
             .report-detailed-table td:first-child { text-align: left; padding-left: 2px; }
             .report-detailed-table th:last-child { width: 7%; }
             .report-notes-display textarea { font-size: 7pt; min-height: 30px; border: 1px solid #ccc !important; background-color: #fafafa !important; color: #000 !important; }
