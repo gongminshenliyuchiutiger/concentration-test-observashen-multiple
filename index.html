@@ -58,11 +58,10 @@
         #reportBtn { background-color: #3498db; }
         #reportBtn:hover { background-color: #2980b9; }
         
-        /* 【修改】為禁用的按鈕設定更具體的樣式，以覆蓋 ID 樣式 */
         button:disabled,
         #saveAndNextBtn:disabled,
         #reportBtn:disabled {
-            background-color: #bdc3c7 !important; /* 使用 !important 確保最高優先級 */
+            background-color: #bdc3c7 !important;
             cursor: not-allowed;
         }
 
@@ -81,11 +80,15 @@
         .delete-session-btn .fa-solid { margin-right: 0; }
 
         /* --- 觀察記錄表格樣式 --- */
-        .table-container { overflow-x: auto; }
+        .table-container { overflow-x: auto; } /* 這是讓表格可以水平滾動的關鍵 */
         table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; }
         th, td { border: 1px solid #bdc3c7; padding: 12px 4px; text-align: center; word-wrap: break-word; }
         th { background-color: #ecf0f1; font-weight: 600; color: #2c3e50; font-size: 0.9em; }
         th.behavior-label { width: 15%; }
+        /* 【新增】為了讓表格在手機上有最小寬度，避免擠壓 */
+        th:not(.behavior-label), td:not(.behavior-label) {
+            min-width: 45px;
+        }
         td.behavior-label { text-align: left; font-weight: 500; background-color: #f8f9fa; white-space: normal; padding-left: 8px; }
         td.data-cell { cursor: pointer; font-size: 1.1em; font-weight: bold; color: #34495e; user-select: none; transition: background-color 0.2s; }
         td.data-cell:hover { background-color: #e0e9f0; }
@@ -162,6 +165,52 @@
             .report-notes-display textarea { font-size: 7pt; min-height: 30px; border: 1px solid #ccc !important; background-color: #fafafa !important; color: #000 !important; }
             tr, li { page-break-inside: avoid; }
         }
+
+        /* --- 【新增】響應式設計 (手機優化) --- */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { padding: 15px; }
+            h1 { font-size: 1.5em; }
+            
+            /* 控制面板垂直排列 */
+            .controls {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            .timer-display { margin-right: 0; }
+            .control-buttons {
+                width: 100%;
+                justify-content: space-around;
+            }
+
+            /* 表格內容調整 */
+            th, td { padding: 8px 3px; font-size: 0.9em; }
+            td.behavior-label { font-size: 0.85em; }
+            
+            /* 已完成列表項目垂直排列 */
+            #completedSessionsList li {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            #completedSessionsList .session-time { margin-left: 0; }
+
+            /* 說明視窗優化 */
+            .help-modal {
+                width: 95%;
+                height: 75vh;
+            }
+
+            /* 報告視窗按鈕優化 */
+            .report-buttons {
+                text-align: center;
+            }
+            .report-buttons button {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -170,7 +219,7 @@
         <div class="container" id="main-container">
             <h1><i class="fa-solid fa-clipboard-list"></i>兒童專注力測試觀察多筆記錄系統</h1>
             <p class="instructions">
-                點擊畫面右上方「使用說明」懸浮按鈕以熟悉操作
+                點擊畫面右上方「<i class="fa-solid fa-book"></i>」按鈕以熟悉操作
             </p>
 
             <div class="observer-info">
@@ -487,7 +536,7 @@
                     
                     const sessionTime = document.createElement('span');
                     sessionTime.className = 'session-time';
-                    sessionTime.textContent = session.startTime.toLocaleString('zh-TW');
+                    sessionTime.textContent = new Date(session.startTime).toLocaleString('zh-TW');
 
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = 'delete-session-btn';
@@ -544,7 +593,7 @@
                 allSessionsHTML += `
                     <div class="report-session-block">
                         <h3><i class="fa-solid fa-clipboard"></i> 觀察 #${index + 1}: ${session.activityName}</h3>
-                        <p style="margin-bottom: 15px; color: #555;"><b>開始時間:</b> ${session.startTime.toLocaleString('zh-TW')}</p>
+                        <p style="margin-bottom: 15px; color: #555;"><b>開始時間:</b> ${new Date(session.startTime).toLocaleString('zh-TW')}</p>
                         ${detailedTableHTML}
                         ${notesHTML}
                     </div>`;
@@ -603,7 +652,7 @@
 
             allSessionsData.forEach((session, index) => {
                 textContent += `\n--- 觀察 #${index + 1}: ${session.activityName} ---\n`;
-                textContent += `開始時間: ${session.startTime.toLocaleString('zh-TW')}\n\n`;
+                textContent += `開始時間: ${new Date(session.startTime).toLocaleString('zh-TW')}\n\n`;
                 
                 let tableHeaderTxt = padEnd('行為項目', 25);
                 timeIntervals.forEach(interval => { tableHeaderTxt += padStart(interval, 5); });
@@ -700,35 +749,72 @@
             document.querySelectorAll('.current-column').forEach(el => el.classList.remove('current-column'));
         }
         
+        // --- 【修改】重構此函數以同時支援滑鼠與觸控 ---
         function setupModalLogic() {
             const helpModalHeader = document.getElementById('helpModalHeader');
             const resizeHandle = document.getElementById('resizeHandle');
-            let isDragging = false, offsetX, offsetY;
-            helpModalHeader.addEventListener('mousedown', (e) => {
-                if (e.button !== 0) return;
-                isDragging = true;
-                const rect = helpModal.getBoundingClientRect();
-                helpModal.style.transform = 'none';
-                helpModal.style.left = `${rect.left}px`;
-                helpModal.style.top = `${rect.top}px`;
-                offsetX = e.clientX - rect.left;
-                offsetY = e.clientY - rect.top;
-                document.body.style.userSelect = 'none';
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp);
-            });
-            function onMouseMove(e) { if (!isDragging) return; helpModal.style.left = `${e.clientX - offsetX}px`; helpModal.style.top = `${e.clientY - offsetY}px`; }
-            function onMouseUp() { isDragging = false; document.body.style.userSelect = ''; document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
-            let isResizing = false;
-            resizeHandle.addEventListener('mousedown', (e) => {
-                isResizing = true;
-                e.preventDefault();
-                document.body.style.userSelect = 'none';
-                document.addEventListener('mousemove', onResizeMove);
-                document.addEventListener('mouseup', onResizeUp);
-            });
-            function onResizeMove(e) { if (!isResizing) return; const rect = helpModal.getBoundingClientRect(); helpModal.style.width = `${e.clientX - rect.left}px`; helpModal.style.height = `${e.clientY - rect.top}px`; }
-            function onResizeUp() { isResizing = false; document.body.style.userSelect = ''; document.removeEventListener('mousemove', onResizeMove); document.removeEventListener('mouseup', onResizeUp); }
+
+            // --- 統一處理拖曳和縮放的邏輯 ---
+            const makeInteractive = (element, target, mode) => {
+                let isInteracting = false;
+                let initialX, initialY, initialLeft, initialTop, initialWidth, initialHeight;
+
+                const startInteraction = (e) => {
+                    isInteracting = true;
+                    const event = e.touches ? e.touches[0] : e;
+                    
+                    initialX = event.clientX;
+                    initialY = event.clientY;
+                    
+                    const rect = target.getBoundingClientRect();
+                    target.style.transform = 'none'; // 取消 transform 以便用 left/top 定位
+                    target.style.left = `${rect.left}px`;
+                    target.style.top = `${rect.top}px`;
+                    
+                    initialLeft = rect.left;
+                    initialTop = rect.top;
+                    initialWidth = rect.width;
+                    initialHeight = rect.height;
+
+                    document.body.style.userSelect = 'none';
+                    document.addEventListener('mousemove', onInteractionMove);
+                    document.addEventListener('touchmove', onInteractionMove, { passive: false });
+                    document.addEventListener('mouseup', endInteraction);
+                    document.addEventListener('touchend', endInteraction);
+                };
+
+                const onInteractionMove = (e) => {
+                    if (!isInteracting) return;
+                    e.preventDefault(); // 防止觸控時頁面滾動
+
+                    const event = e.touches ? e.touches[0] : e;
+                    const dx = event.clientX - initialX;
+                    const dy = event.clientY - initialY;
+
+                    if (mode === 'drag') {
+                        target.style.left = `${initialLeft + dx}px`;
+                        target.style.top = `${initialTop + dy}px`;
+                    } else if (mode === 'resize') {
+                        target.style.width = `${initialWidth + dx}px`;
+                        target.style.height = `${initialHeight + dy}px`;
+                    }
+                };
+                
+                const endInteraction = () => {
+                    isInteracting = false;
+                    document.body.style.userSelect = '';
+                    document.removeEventListener('mousemove', onInteractionMove);
+                    document.removeEventListener('touchmove', onInteractionMove);
+                    document.removeEventListener('mouseup', endInteraction);
+                    document.removeEventListener('touchend', endInteraction);
+                };
+                
+                element.addEventListener('mousedown', startInteraction);
+                element.addEventListener('touchstart', startInteraction);
+            };
+
+            makeInteractive(helpModalHeader, helpModal, 'drag');
+            makeInteractive(resizeHandle, helpModal, 'resize');
         }
 
         // --- Event Listeners and Initializer ---
@@ -738,6 +824,11 @@
         reportBtn.addEventListener('click', generateReport);
         helpBtn.addEventListener('click', () => { document.getElementById('helpModal').style.display = 'flex'; });
         closeHelpModalBtn.addEventListener('click', () => { document.getElementById('helpModal').style.display = 'none'; });
+        
+        // 【修正】確保時間戳是 Date 物件，避免在報告中出錯
+        // (在 handleSaveAndNext 和 handleSessionSelect 中已確保，此處為提醒)
+        // 修正了 updateCompletedSessionsUI 和 generateReport 中顯示時間的方式，
+        // 使用 new Date(session.startTime) 來確保即使是從存儲中讀取的字串也能被正確處理。
         
         initializeCurrentSession();
         setupModalLogic();
