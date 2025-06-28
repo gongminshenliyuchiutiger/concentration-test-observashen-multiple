@@ -79,18 +79,30 @@
         .delete-session-btn:hover { opacity: 1; }
         .delete-session-btn .fa-solid { margin-right: 0; }
 
-        /* --- 觀察記錄表格樣式 --- */
-        .table-container { overflow-x: auto; } /* 這是讓表格可以水平滾動的關鍵 */
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; }
-        th, td { border: 1px solid #bdc3c7; padding: 12px 4px; text-align: center; word-wrap: break-word; }
-        th { background-color: #ecf0f1; font-weight: 600; color: #2c3e50; font-size: 0.9em; }
-        th.behavior-label { width: 15%; }
-        /* 【新增】為了讓表格在手機上有最小寬度，避免擠壓 */
-        th:not(.behavior-label), td:not(.behavior-label) {
-            min-width: 45px;
+        /* --- 【主要修改】觀察記錄表格樣式 (桌機版) --- */
+        .table-container { 
+            overflow-x: auto; /* 桌機版保持水平滾動 */
         }
-        td.behavior-label { text-align: left; font-weight: 500; background-color: #f8f9fa; white-space: normal; padding-left: 8px; }
-        td.data-cell { cursor: pointer; font-size: 1.1em; font-weight: bold; color: #34495e; user-select: none; transition: background-color 0.2s; }
+        table { 
+            width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; 
+            min-width: 1200px; /* 設定最小寬度，觸發水平滾動 */
+        }
+        th, td { 
+            border: 1px solid #bdc3c7; padding: 12px 4px; text-align: center; word-wrap: break-word; 
+        }
+        th { background-color: #ecf0f1; font-weight: 600; color: #2c3e50; font-size: 0.9em; }
+        th:first-child, td.behavior-label {
+            width: 220px;
+        }
+        th:last-child, td.total-cell {
+            width: 80px;
+        }
+        td.behavior-label { 
+            text-align: left; font-weight: 500; background-color: #f8f9fa; white-space: normal; padding-left: 8px; 
+        }
+        td.data-cell { 
+            cursor: pointer; font-size: 1.1em; font-weight: bold; color: #34495e; user-select: none; transition: background-color 0.2s; 
+        }
         td.data-cell:hover { background-color: #e0e9f0; }
         td.total-cell { font-weight: bold; background-color: #e8f4fd; }
         .current-column { background-color: #fffbe0 !important; }
@@ -143,7 +155,59 @@
         .help-modal-content code { background-color: #ecf0f1; padding: 2px 5px; border-radius: 3px; color: #c0392b; }
         .resize-handle { position: absolute; bottom: 0; right: 0; width: 15px; height: 15px; cursor: se-resize; background: repeating-linear-gradient(-45deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 2px, transparent 2px, transparent 4px); }
 
-        /* --- 列印專用樣式 (最終寬度優化) --- */
+        /* --- 【主要修改】響應式設計 (手機優先的表格處理) --- */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { padding: 15px; }
+            h1 { font-size: 1.5em; }
+            
+            .controls { flex-direction: column; align-items: stretch; text-align: center; }
+            .control-buttons { justify-content: space-around; }
+
+            /* 手機列表項目垂直排列 */
+            #completedSessionsList li {
+                flex-direction: column; align-items: flex-start; gap: 5px;
+            }
+            #completedSessionsList .session-time { margin-left: 0; }
+            
+            /* 移除滾動條，準備縮小表格 */
+            .table-container {
+                overflow-x: visible;
+            }
+            /* 縮小表格以適應螢幕 */
+            #observationTable {
+                min-width: 100%;
+                font-size: 0.7em; /* 大幅縮小字體 */
+            }
+            #observationTable th, #observationTable td {
+                padding: 6px 2px; /* 減少內邊距 */
+            }
+            #observationTable th:first-child, #observationTable td.behavior-label {
+                width: 28%; /* 給行為標籤更多空間 */
+                font-size: 0.9em; /* 行為標籤字體可稍大 */
+            }
+            #observationTable th:last-child, #observationTable td.total-cell {
+                width: 12%; /* 給總次數更多空間 */
+            }
+
+            /* 彈窗優化 */
+            .help-modal { width: 95%; height: 75vh; }
+            .report-buttons { text-align: center; }
+            .report-buttons button { width: 100%; margin: 5px 0; }
+        }
+
+        @media (max-width: 480px) {
+            .control-buttons button { margin-bottom: 5px; }
+             /* 在更小的螢幕上，進一步縮小表格字體 */
+            #observationTable {
+                font-size: 0.6em;
+            }
+            #observationTable th, #observationTable td {
+                padding: 4px 1px;
+            }
+        }
+
+        /* --- 列印專用樣式 --- */
         @media print {
             @page {
                 size: A4 landscape;
@@ -160,56 +224,11 @@
             #reportHeader h2 .fa-solid, .report-session-block h3 .fa-solid { display: none; }
             .report-detailed-table table { font-size: 6.5pt; width: 100%; table-layout: fixed; }
             .report-detailed-table th, .report-detailed-table td { padding: 2px 0; border: 1px solid #666;}
-            .report-detailed-table th.behavior-label-print { width: 14%; }
-            .report-detailed-table th.total-cell-print { width: 6%; }
+            .report-detailed-table th:first-child { width: 18%; text-align: left; padding-left: 2px; } /* Print style adjustment */
+            .report-detailed-table td:first-child { text-align: left; padding-left: 2px; }
+            .report-detailed-table th:last-child { width: 7%; }
             .report-notes-display textarea { font-size: 7pt; min-height: 30px; border: 1px solid #ccc !important; background-color: #fafafa !important; color: #000 !important; }
             tr, li { page-break-inside: avoid; }
-        }
-
-        /* --- 【新增】響應式設計 (手機優化) --- */
-        @media (max-width: 768px) {
-            body { padding: 10px; }
-            .container { padding: 15px; }
-            h1 { font-size: 1.5em; }
-            
-            /* 控制面板垂直排列 */
-            .controls {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-            .timer-display { margin-right: 0; }
-            .control-buttons {
-                width: 100%;
-                justify-content: space-around;
-            }
-
-            /* 表格內容調整 */
-            th, td { padding: 8px 3px; font-size: 0.9em; }
-            td.behavior-label { font-size: 0.85em; }
-            
-            /* 已完成列表項目垂直排列 */
-            #completedSessionsList li {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-            }
-            #completedSessionsList .session-time { margin-left: 0; }
-
-            /* 說明視窗優化 */
-            .help-modal {
-                width: 95%;
-                height: 75vh;
-            }
-
-            /* 報告視窗按鈕優化 */
-            .report-buttons {
-                text-align: center;
-            }
-            .report-buttons button {
-                width: 100%;
-                margin: 5px 0;
-            }
         }
     </style>
 </head>
@@ -298,7 +317,7 @@
             <h4>計時與記錄</h4>
             <ul>
                 <li>點擊 <i class="fa-solid fa-play"></i> <strong>開始觀察</strong> 按鈕以啟動計時器。點擊後，「儲存本次」按鈕才會啟用。</li>
-                <li>在對應的行為格子中，<code>滑鼠左鍵點擊</code> 增加次數，<code>滑鼠右鍵點擊</code> 減少次數。</li>
+                <li>在對應的行為格子中，<code>滑鼠左鍵點擊</code> (或<code>手指輕觸</code>) 增加次數，<code>滑鼠右鍵點擊</code> 減少次數。</li>
             </ul>
             <h4>多筆記錄與編輯</h4>
             <ul>
@@ -573,9 +592,9 @@
 
             let allSessionsHTML = '';
             allSessionsData.forEach((session, index) => {
-                let detailedTableHTML = `<div class="report-detailed-table"><table border="1"><thead><tr><th class="behavior-label-print">行為項目</th>`;
+                let detailedTableHTML = `<div class="report-detailed-table"><table border="1"><thead><tr><th>行為項目</th>`;
                 timeIntervals.forEach(interval => detailedTableHTML += `<th>${interval}</th>`);
-                detailedTableHTML += `<th class="total-cell-print">總次數</th></tr></thead><tbody>`;
+                detailedTableHTML += `<th>總次數</th></tr></thead><tbody>`;
                 behaviors.forEach((behavior, rowIndex) => {
                     detailedTableHTML += `<tr><td>${behavior}</td>`;
                     let total = 0;
@@ -749,12 +768,10 @@
             document.querySelectorAll('.current-column').forEach(el => el.classList.remove('current-column'));
         }
         
-        // --- 【修改】重構此函數以同時支援滑鼠與觸控 ---
         function setupModalLogic() {
             const helpModalHeader = document.getElementById('helpModalHeader');
             const resizeHandle = document.getElementById('resizeHandle');
 
-            // --- 統一處理拖曳和縮放的邏輯 ---
             const makeInteractive = (element, target, mode) => {
                 let isInteracting = false;
                 let initialX, initialY, initialLeft, initialTop, initialWidth, initialHeight;
@@ -767,7 +784,7 @@
                     initialY = event.clientY;
                     
                     const rect = target.getBoundingClientRect();
-                    target.style.transform = 'none'; // 取消 transform 以便用 left/top 定位
+                    target.style.transform = 'none';
                     target.style.left = `${rect.left}px`;
                     target.style.top = `${rect.top}px`;
                     
@@ -785,7 +802,7 @@
 
                 const onInteractionMove = (e) => {
                     if (!isInteracting) return;
-                    e.preventDefault(); // 防止觸控時頁面滾動
+                    e.preventDefault(); 
 
                     const event = e.touches ? e.touches[0] : e;
                     const dx = event.clientX - initialX;
@@ -824,11 +841,6 @@
         reportBtn.addEventListener('click', generateReport);
         helpBtn.addEventListener('click', () => { document.getElementById('helpModal').style.display = 'flex'; });
         closeHelpModalBtn.addEventListener('click', () => { document.getElementById('helpModal').style.display = 'none'; });
-        
-        // 【修正】確保時間戳是 Date 物件，避免在報告中出錯
-        // (在 handleSaveAndNext 和 handleSessionSelect 中已確保，此處為提醒)
-        // 修正了 updateCompletedSessionsUI 和 generateReport 中顯示時間的方式，
-        // 使用 new Date(session.startTime) 來確保即使是從存儲中讀取的字串也能被正確處理。
         
         initializeCurrentSession();
         setupModalLogic();
