@@ -211,6 +211,51 @@
         .help-modal-content code { background-color: #ecf0f1; padding: 2px 5px; border-radius: 3px; color: #c0392b; }
         .resize-handle { position: absolute; bottom: 0; right: 0; width: 15px; height: 15px; cursor: se-resize; background: repeating-linear-gradient(-45deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 2px, transparent 2px, transparent 4px); }
 
+        /* --- 新增吉祥物樣式 --- */
+        #mascot-container {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 100px; /* 調整為 100px */
+            height: 100px; /* 調整為 100px */
+            cursor: pointer;
+            z-index: 1002; /* 確保在說明彈窗之上，但低于粒子 */
+            transition: transform 0.1s ease-out; /* 平滑拖曳動畫 */
+            display: flex; /* 用於居中圖片 */
+            justify-content: center; /* 居中圖片 */
+            align-items: center; /* 居中圖片 */
+        }
+        #mascot-container.dragging {
+            cursor: grabbing;
+            user-select: none;
+            transition: none; /* 拖曳時取消過渡效果，避免延遲 */
+            box-shadow: 0 0 15px rgba(52, 152, 219, 0.7); /* 拖曳時增加陰影提示 */
+            border-radius: 50%; /* 如果是透明背景，陰影會是圓形 */
+        }
+        #mascot-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* 確保SVG完整顯示 */
+            pointer-events: none; /* 讓點擊事件穿透到父容器 */
+        }
+
+        /* 粒子動畫樣式 */
+        .particle {
+            position: fixed;
+            background-color: currentColor; /* 顏色隨機 */
+            border-radius: 50%;
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0);
+            pointer-events: none; /* 確保粒子不干擾其他交互 */
+            animation: particle-fade-out 1s forwards ease-out;
+            z-index: 1003; /* 在吉祥物之上 */
+        }
+        @keyframes particle-fade-out {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(2) translateY(-50px); filter: blur(3px); }
+        }
+
+
         /* --- 響應式設計 --- */
         @media (max-width: 768px) {
             body { padding: 10px; }
@@ -279,6 +324,14 @@
             .help-modal { height: 75vh; } /* Adjust height for smaller screens */
             .report-buttons { text-align: center; }
             .report-buttons button { width: 100%; margin: 5px 0; }
+
+            /* 吉祥物在手機上縮小 */
+            #mascot-container {
+                width: 80px; /* 調整為 80px */
+                height: 80px; /* 調整為 80px */
+                bottom: 10px;
+                left: 10px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -307,7 +360,10 @@
                 margin: 5mm;
             }
             body, .wrapper, .container { padding: 0; margin: 0; background-color: #fff; box-shadow: none; }
-            body > *:not(.report-overlay) { display: none; }
+            /* 隱藏非報告內容，包括幫助按鈕和吉祥物 */
+            body > *:not(.report-overlay):not(#mascot-container):not(#helpBtn) { display: none; } 
+            #mascot-container, #helpBtn { display: none !important; } /* 強制隱藏吉祥物和幫助按鈕 */
+
             .report-overlay { position: static; display: block !important; width: 100%; height: auto; background: none; padding: 0; margin: 0; overflow: visible; }
             .report-content { box-shadow: none; border: none; padding: 0; margin: 0; width: 100%; max-width: 100%; max-height: none; overflow: visible; border-radius: 0; }
             .report-buttons { display: none; }
@@ -415,6 +471,7 @@
             <ul>
                 <li>在上方欄位輸入「觀察人」、「被觀察人」與「活動/課程」名稱。</li>
                 <li>此視窗可以按住頂部標題欄進行拖曳，也可以拖動右下角調整大小。(支援滑鼠與觸控)</li>
+                <li>畫面左下角的 <img src="image/LiyuChillGuy.svg" alt="吉祥物圖示" style="width: 1.2em; height: 1.2em; vertical-align: middle;"> 吉祥物圖示，點擊會噴發粒子，長按可以拖曳到其他位置避免遮擋物件。</li>
             </ul>
             <h4>計時與記錄</h4>
             <ul>
@@ -442,6 +499,11 @@
         <div class="resize-handle" id="resizeHandle"></div>
     </div>
     
+    <!-- 吉祥物圖示 -->
+    <div id="mascot-container" title="點擊會噴發粒子，長按可以拖曳我喔！">
+        <img id="mascot-image" src="image/LiyuChillGuy.svg" alt="吉祥物圖示">
+    </div>
+
     <!-- 引入 html2canvas 函式庫 (用於匯出圖片) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
@@ -474,6 +536,10 @@
         const closeHelpModalBtn = document.getElementById('closeHelpModalBtn');
         const helpModalHeader = document.getElementById('helpModalHeader'); // Get header for drag
         const resizeHandle = document.getElementById('resizeHandle'); // Get handle for resize
+
+        // --- 吉祥物元素 ---
+        const mascotContainer = document.getElementById('mascot-container');
+        const mascotImage = document.getElementById('mascot-image');
 
         // --- 狀態變數 ---
         const behaviors = ['Off task (分心)', 'Fidget (坐不住/扭動)', 'Out of seat (離開座位)', 'Vocalize (出聲)', 'Plays with objects (玩東西)'];
@@ -1066,6 +1132,173 @@
                 makeInteractive(helpModal, helpModalHeader, resizeHandle);
             }
         }
+
+        // --- 吉祥物拖曳與粒子效果 ---
+        let isDraggingMascot = false;
+        let mascotOffsetX, mascotOffsetY;
+        let longPressTimer = null;
+        const LONG_PRESS_THRESHOLD = 500; // milliseconds
+
+        const getMascotEventCoords = (e) => {
+            return e.touches ? e.touches[0] : e;
+        };
+
+        const startMascotDrag = (e) => {
+            isDraggingMascot = true;
+            mascotContainer.classList.add('dragging');
+            const coords = getMascotEventCoords(e);
+            const rect = mascotContainer.getBoundingClientRect();
+
+            // Set position to fixed to allow dragging relative to viewport
+            mascotContainer.style.position = 'fixed'; 
+            mascotContainer.style.left = `${rect.left}px`;
+            mascotContainer.style.top = `${rect.top}px`;
+            mascotContainer.style.bottom = 'auto'; // Remove bottom to avoid conflict
+            mascotContainer.style.right = 'auto';  // Remove right
+
+            mascotOffsetX = coords.clientX - rect.left;
+            mascotOffsetY = coords.clientY - rect.top;
+
+            document.addEventListener('mousemove', onMascotDragMove);
+            document.addEventListener('mouseup', onMascotDragEnd);
+            document.addEventListener('touchmove', onMascotDragMove, { passive: false });
+            document.addEventListener('touchend', onMascotDragEnd);
+        };
+
+        const onMascotDragMove = (e) => {
+            if (!isDraggingMascot) return;
+            const coords = getMascotEventCoords(e);
+            let newX = coords.clientX - mascotOffsetX;
+            let newY = coords.clientY - mascotOffsetY;
+
+            // Constrain to viewport boundaries
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const mascotWidth = mascotContainer.offsetWidth;
+            const mascotHeight = mascotContainer.offsetHeight;
+
+            newX = Math.max(0, Math.min(newX, viewportWidth - mascotWidth));
+            newY = Math.max(0, Math.min(newY, viewportHeight - mascotHeight));
+
+            mascotContainer.style.left = `${newX}px`;
+            mascotContainer.style.top = `${newY}px`;
+
+            if (e.type === 'touchmove') e.preventDefault(); // Prevent scrolling
+        };
+
+        const onMascotDragEnd = () => {
+            isDraggingMascot = false;
+            mascotContainer.classList.remove('dragging');
+            document.removeEventListener('mousemove', onMascotDragMove);
+            document.removeEventListener('mouseup', onMascotDragEnd);
+            document.removeEventListener('touchmove', onMascotDragMove);
+            document.removeEventListener('touchend', onMascotDragEnd);
+        };
+
+        const createParticle = (x, y) => {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            
+            // Random color
+            const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722', '#795548', '#9e9e9e', '#607d8b'];
+            particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+
+            // Random size
+            const size = Math.random() * 8 + 4; // 4px to 12px
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+
+            // Initial position near the click
+            particle.style.left = `${x}px`;
+            particle.style.top = `${y}px`;
+
+            document.body.appendChild(particle);
+
+            // Trigger animation after appending
+            requestAnimationFrame(() => {
+                // The animation `particle-fade-out` in CSS handles opacity and transform
+                particle.style.opacity = 1; // Explicitly set to 1 before animation starts if needed by browser
+            });
+
+
+            // Remove particle after animation (1s)
+            particle.addEventListener('animationend', () => {
+                particle.remove();
+            });
+        };
+
+        const handleMascotClick = (e) => {
+            clearTimeout(longPressTimer); // Clear long press timer on click
+            if (isDraggingMascot) { // If it was a drag, don't trigger particles immediately after drag ends
+                return;
+            }
+            
+            // Get the center of the mascot for particle origin
+            const rect = mascotContainer.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            // Create a burst of particles
+            const numParticles = Math.floor(Math.random() * 10) + 10; // 10 to 20 particles
+            for (let i = 0; i < numParticles; i++) {
+                // Random offset from center to create a burst effect
+                const offsetX = (Math.random() - 0.5) * rect.width * 0.8;
+                const offsetY = (Math.random() - 0.5) * rect.height * 0.8;
+                createParticle(centerX + offsetX, centerY + offsetY);
+            }
+        };
+
+        // --- Mascot Event Listeners ---
+        mascotContainer.addEventListener('mousedown', (e) => {
+            if (e.button === 0) { // Only for left click
+                longPressTimer = setTimeout(() => {
+                    // Only start dragging if it wasn't a quick tap
+                    if (!isDraggingMascot) { 
+                        startMascotDrag(e);
+                    }
+                }, LONG_PRESS_THRESHOLD);
+            }
+        });
+        mascotContainer.addEventListener('touchstart', (e) => {
+            longPressTimer = setTimeout(() => {
+                // Only start dragging if it wasn't a quick tap
+                if (!isDraggingMascot) {
+                    startMascotDrag(e);
+                }
+            }, LONG_PRESS_THRESHOLD);
+            // Prevent default touch behavior (like scrolling) but only if it's potentially a drag
+            // This is tricky with passive:false. The startMascotDrag already handles preventDefault for move.
+            // For now, allow default to let tap fire, and prevent on touchmove.
+            // e.preventDefault(); // Moved to touchmove handler
+        }, { passive: false }); // Needs passive:false because preventDefault might be called during drag
+
+        // Use document for mouseup/touchend to catch releases outside the mascot
+        document.addEventListener('mouseup', (e) => {
+            clearTimeout(longPressTimer);
+            if (!isDraggingMascot) {
+                // If not dragging, and the mouseup happened over the mascot, it was a click
+                if (mascotContainer.contains(e.target)) {
+                    handleMascotClick(e);
+                }
+            } else {
+                onMascotDragEnd();
+            }
+        });
+        document.addEventListener('touchend', (e) => {
+            clearTimeout(longPressTimer);
+            // If it was a drag, onMascotDragEnd will be called by its own listener.
+            // If it was not a drag, then it was a tap, so trigger particles.
+            if (!isDraggingMascot) {
+                handleMascotClick(e); // Trigger particles for tap
+            } else {
+                onMascotDragEnd(); // Ensure drag state is reset even if onMascotDragEnd was registered on document
+            }
+        });
+        
+        // Prevent default on mascot to avoid image dragging or context menu on mobile
+        mascotContainer.addEventListener('dragstart', (e) => e.preventDefault());
+        mascotContainer.addEventListener('contextmenu', (e) => e.preventDefault());
+
 
         // --- Event Listeners and Initializer ---
         startBtn.addEventListener('click', handleStartPauseResume);
