@@ -79,26 +79,42 @@
         .delete-session-btn:hover { opacity: 1; }
         .delete-session-btn .fa-solid { margin-right: 0; }
 
-        /* --- 觀察記錄表格樣式 (桌機版) --- */
+        /* --- 觀察記錄表格樣式 --- */
         .table-container { 
             overflow-x: auto; 
+            -webkit-overflow-scrolling: touch; /* For smooth scrolling on iOS */
+            position: relative; /* Needed for sticky children in some contexts */
         }
         table { 
             width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; 
-            min-width: 1200px;
+            min-width: 1200px; /* Ensure sufficient width to trigger scrolling */
         }
         th, td { 
             border: 1px solid #bdc3c7; padding: 12px 4px; text-align: center; word-wrap: break-word; 
         }
         th { background-color: #ecf0f1; font-weight: 600; color: #2c3e50; font-size: 0.9em; }
-        th:first-child, td.behavior-label {
+        
+        /* 凍結欄位 - 主表格 */
+        th:first-child {
             width: 220px;
-        }
-        th:last-child, td.total-cell {
-            width: 80px;
+            position: sticky;
+            left: 0;
+            z-index: 3; /* Header needs to be above data cells and its own sticky column */
+            background-color: #ecf0f1; /* Match header background */
+            text-align: left; /* Keep left alignment for behavior labels */
+            padding-left: 8px;
         }
         td.behavior-label { 
+            width: 220px; /* Match header width */
             text-align: left; font-weight: 500; background-color: #f8f9fa; white-space: normal; padding-left: 8px; 
+            position: sticky;
+            left: 0;
+            z-index: 1; /* Data cells should be below sticky header */
+            background-color: #f8f9fa; /* Ensure it has a background */
+        }
+
+        th:last-child, td.total-cell {
+            width: 80px;
         }
         td.data-cell { 
             cursor: pointer; font-size: 1.1em; font-weight: bold; color: #34495e; user-select: none; transition: background-color 0.2s; 
@@ -127,9 +143,38 @@
         #reportHeader p { margin: 5px 0; color: #555; }
         .report-session-block { margin-bottom: 40px; border: 1px solid #ddd; padding: 20px; border-radius: 8px; background-color: #fdfdfd;}
         .report-session-block h3 { color: #34495e; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; margin-top: 0; }
-        .report-detailed-table table { width: 100%; font-size: 0.85em; border-collapse: collapse; margin-top: 15px; table-layout: fixed; }
+        
+        /* 【核心修改】讓報告表格可以水平滾動 */
+        .report-detailed-table {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch; /* 優化iOS滾動體驗 */
+            position: relative; /* Needed for sticky children */
+        }
+        .report-detailed-table table { 
+            width: 100%; font-size: 0.85em; border-collapse: collapse; margin-top: 15px; table-layout: fixed; 
+            min-width: 900px; /* 設定最小寬度觸發滾動 */
+        }
         .report-detailed-table th, .report-detailed-table td { border: 1px solid #ccc; padding: 5px 2px; text-align: center; }
         .report-detailed-table th { background-color: #f2f2f2; }
+        
+        /* 凍結欄位 - 報告表格 */
+        .report-detailed-table th:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 3; /* Header above all */
+            background-color: #f2f2f2; /* Match header background */
+            text-align: left; /* Keep left alignment for behavior labels */
+            padding-left: 8px;
+        }
+        .report-detailed-table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 1; /* Data cells below sticky header */
+            background-color: #f8f9fa; /* Light background for the sticky column */
+            text-align: left; /* Keep left alignment for behavior labels */
+            padding-left: 8px;
+        }
+
         .report-notes-display { margin-top: 20px; }
         .report-notes-display h4 { color: #34495e; margin-bottom: 8px; }
         .report-notes-display textarea { width: 100%; min-height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; box-sizing: border-box; background-color: #f8f9fa; resize: vertical; }
@@ -137,13 +182,24 @@
         .report-buttons button { padding: 10px 20px; font-size: 1em; border: none; border-radius: 5px; cursor: pointer; color: white; margin-left: 10px; }
         #exportPdfBtn { background-color: #c0392b; }
         #exportTxtBtn { background-color: #2980b9; }
+        #exportImageBtn { background-color: #1abc9c; } /* New button style */
+        #exportImageBtn:hover { background-color: #16a085; }
         #closeReportBtn { background-color: #7f8c8d; }
         
-        /* --- 使用說明彈窗 --- */
+        /* --- 使用說明彈窗 (修改為響應式) --- */
         .help-btn { position: fixed; top: 20px; right: 20px; width: 50px; height: 50px; background-color: #3498db; color: white; border: none; border-radius: 50%; font-size: 1.6em; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; z-index: 1001; transition: background-color 0.3s, transform 0.2s; }
         .help-btn .fa-solid { margin-right: 0; }
         .help-btn:hover { background-color: #2980b9; transform: scale(1.1); }
-        .help-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 500px; min-width: 350px; height: 60vh; min-height: 400px; background-color: white; border-radius: 10px; box-shadow: 0 5px 25px rgba(0,0,0,0.3); z-index: 1010; flex-direction: column; overflow: hidden; }
+        .help-modal {
+            display: none; position: fixed; top: 50%; left: 50%;
+            width: 90vw; max-width: 500px; /* 響應式寬度 */
+            min-width: 350px; /* 最小寬度 */
+            height: 60vh; min-height: 300px; /* 調整最小高度 */
+            background-color: white;
+            border-radius: 10px; box-shadow: 0 5px 25px rgba(0,0,0,0.3); z-index: 1010;
+            flex-direction: column; overflow: hidden;
+            transform: translate(-50%, -50%); /* 保持居中 */
+        }
         .help-modal-header { padding: 10px 15px; background-color: #34495e; color: white; cursor: move; display: flex; justify-content: space-between; align-items: center; user-select: none; }
         .help-modal-header span { font-weight: 600; }
         .close-modal-btn { background: none; border: none; color: white; font-size: 1.8em; line-height: 1; cursor: pointer; opacity: 0.8; padding: 0 5px; }
@@ -170,7 +226,7 @@
             #completedSessionsList .session-time { margin-left: 0; }
             
             .table-container {
-                overflow-x: visible;
+                overflow-x: auto; /* Keep overflow-x for sticky column */
             }
             #observationTable {
                 min-width: 100%;
@@ -179,8 +235,10 @@
             #observationTable th, #observationTable td {
                 padding: 6px 2px;
             }
+            /* Adjust sticky column width for smaller screens */
             #observationTable th:first-child, #observationTable td.behavior-label {
-                width: 28%; font-size: 0.9em;
+                width: 150px; /* Reduced width for smaller screens */
+                padding-left: 5px;
             }
             #observationTable th:last-child, #observationTable td.total-cell {
                 width: 12%;
@@ -206,12 +264,19 @@
             .report-detailed-table th, .report-detailed-table td {
                 padding: 5px 2px;
             }
+            /* Adjust sticky column width for report table on smaller screens */
+            .report-detailed-table th:first-child,
+            .report-detailed-table td:first-child {
+                width: 150px; /* Reduced width */
+                padding-left: 5px;
+            }
             .report-notes-display textarea {
                 font-size: 0.9em;
             }
 
             /* --- 彈窗通用優化 --- */
-            .help-modal { width: 95%; height: 75vh; }
+            /* help-modal now uses width: 90vw; max-width: 500px; so this media query is less critical for width */
+            .help-modal { height: 75vh; } /* Adjust height for smaller screens */
             .report-buttons { text-align: center; }
             .report-buttons button { width: 100%; margin: 5px 0; }
         }
@@ -224,7 +289,15 @@
             #observationTable th, #observationTable td {
                 padding: 4px 1px;
             }
-            /* 【移除】不再需要針對更小螢幕縮小報告表格字體 */
+            /* Adjust sticky column width for smaller screens */
+            #observationTable th:first-child, #observationTable td.behavior-label {
+                width: 120px; /* Further reduced width */
+            }
+            /* Adjust sticky column width for report table on smaller screens */
+            .report-detailed-table th:first-child,
+            .report-detailed-table td:first-child {
+                width: 120px; /* Further reduced width */
+            }
         }
 
         /* --- 列印專用樣式 (不受螢幕響應式影響) --- */
@@ -244,8 +317,17 @@
             #reportHeader h2 .fa-solid, .report-session-block h3 .fa-solid { display: none; }
             .report-detailed-table table { font-size: 6.5pt; width: 100%; table-layout: fixed; }
             .report-detailed-table th, .report-detailed-table td { padding: 2px 0; border: 1px solid #666;}
-            .report-detailed-table th:first-child { width: 18%; text-align: left; padding-left: 2px; }
-            .report-detailed-table td:first-child { text-align: left; padding-left: 2px; }
+            /* Disable sticky behavior for print */
+            .report-detailed-table th:first-child { 
+                width: 18%; text-align: left; padding-left: 2px; 
+                position: static; /* Disable sticky */
+                background-color: #f2f2f2 !important; /* Ensure background is retained */
+            }
+            .report-detailed-table td:first-child { 
+                text-align: left; padding-left: 2px; 
+                position: static; /* Disable sticky */
+                background-color: #f8f9fa !important; /* Ensure background is retained */
+            }
             .report-detailed-table th:last-child { width: 7%; }
             .report-notes-display textarea { font-size: 7pt; min-height: 30px; border: 1px solid #ccc !important; background-color: #fafafa !important; color: #000 !important; }
             tr, li { page-break-inside: avoid; }
@@ -332,12 +414,15 @@
             <h4>基本操作</h4>
             <ul>
                 <li>在上方欄位輸入「觀察人」、「被觀察人」與「活動/課程」名稱。</li>
-                <li>此視窗可以按住頂部標題欄進行拖曳，也可以拖動右下角調整大小。</li>
+                <li>此視窗可以按住頂部標題欄進行拖曳，也可以拖動右下角調整大小。(支援滑鼠與觸控)</li>
             </ul>
             <h4>計時與記錄</h4>
             <ul>
                 <li>點擊 <i class="fa-solid fa-play"></i> <strong>開始觀察</strong> 按鈕以啟動計時器。點擊後，「儲存本次」按鈕才會啟用。</li>
+                <li>計時器每 30 秒為一個區間，共 10 分鐘 (20 個區間)。</li>
+                <li>當前進行中的時間區間欄位會以 <span style="background-color:#fffbe0;">黃色</span> 標示。</li>
                 <li>在對應的行為格子中，<code>滑鼠左鍵點擊</code> (或<code>手指輕觸</code>) 增加次數，<code>滑鼠右鍵點擊</code> 減少次數。</li>
+                <li>計時中可隨時點擊 <i class="fa-solid fa-pause"></i> <strong>暫停</strong>，再次點擊可繼續。</li>
             </ul>
             <h4>多筆記錄與編輯</h4>
             <ul>
@@ -345,16 +430,20 @@
                 <li>點擊下方「已完成列表」中的任一項目，即可將該筆舊資料**載入回來進行編輯**。</li>
                 <li>編輯舊資料時，儲存按鈕會變為 <i class="fa-solid fa-floppy-disk"></i> <strong>儲存更新記錄</strong> (橘色按鈕)。</li>
                 <li>點擊列表項目右側的 <i class="fa-solid fa-trash-can" ></i> 按鈕，可以**刪除**特定的觀察記錄。</li>
+                <li>點擊 <i class="fa-solid fa-trash-can"></i> <strong>全部清空</strong> 按鈕會清除所有已儲存的記錄、姓名和活動，請謹慎使用。</li>
             </ul>
              <h4>報告功能</h4>
             <ul>
-                <li>報告中可**直接編輯**每一筆記錄的備註，關閉視窗時會自動保存。</li>
-                <li>報告可匯出為 PDF (建議**橫向列印**) 或 TXT。</li>
+                <li>觀察完成或中途皆可點擊 <i class="fa-solid fa-file-invoice"></i> <strong>產生觀察報告</strong>。</li>
+                <li>報告中可「直接編輯」每一筆記錄的備註，關閉視窗時會自動保存。</li>
+                <li>在報告視窗中，可點擊 <i class="fa-solid fa-file-pdf"></i> <strong>匯出為 PDF</strong> (將觸發瀏覽器的列印功能)、 <i class="fa-solid fa-file-lines"></i> <strong>匯出為 TXT</strong> 將報告儲存為純文字檔，或 <i class="fa-solid fa-image"></i> <strong>匯出為圖檔 (PNG)</strong>。</li>
             </ul>
         </div>
         <div class="resize-handle" id="resizeHandle"></div>
     </div>
     
+    <!-- 引入 html2canvas 函式庫 (用於匯出圖片) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
     
     <script>
@@ -383,6 +472,8 @@
         const helpBtn = document.getElementById('helpBtn');
         const helpModal = document.getElementById('helpModal');
         const closeHelpModalBtn = document.getElementById('closeHelpModalBtn');
+        const helpModalHeader = document.getElementById('helpModalHeader'); // Get header for drag
+        const resizeHandle = document.getElementById('resizeHandle'); // Get handle for resize
 
         // --- 狀態變數 ---
         const behaviors = ['Off task (分心)', 'Fidget (坐不住/扭動)', 'Out of seat (離開座位)', 'Vocalize (出聲)', 'Plays with objects (玩東西)'];
@@ -425,14 +516,15 @@
             });
             
             generalNotesTextarea.value = '';
-            activityNameInput.value = '';
-
+            // activityNameInput.value = ''; // Don't clear activityName on new session if user wants to keep it
+                                         // only clear if masterReset is called.
+            
             addCellEventListeners();
             resetTimerUI();
             
             currentEditingIndex = null;
             updateSaveButtonUI();
-            saveAndNextBtn.disabled = true;
+            saveAndNextBtn.disabled = true; // Save button should be enabled only after timer starts or editing old session
         }
         
         function updateSaveButtonUI() {
@@ -459,6 +551,7 @@
                 allSessionsData = [];
                 observerNameInput.value = '';
                 subjectNameInput.value = '';
+                activityNameInput.value = ''; // Clear activity name on full reset
                 updateCompletedSessionsUI();
                 initializeCurrentSession();
             }
@@ -498,7 +591,7 @@
         function handleSaveAndNext() {
             const sessionData = {
                 activityName: activityNameInput.value.trim() || '未指定活動',
-                startTime: (currentEditingIndex !== null) ? allSessionsData[currentEditingIndex].startTime : (sessionStartTime || new Date()),
+                startTime: (currentEditingIndex !== null && allSessionsData[currentEditingIndex]) ? allSessionsData[currentEditingIndex].startTime : (sessionStartTime || new Date()),
                 data: JSON.parse(JSON.stringify(data)),
                 generalNotes: generalNotesTextarea.value.trim()
             };
@@ -519,12 +612,25 @@
             const li = event.currentTarget;
             const indexToLoad = parseInt(li.dataset.sessionIndex);
             
+            // If already editing this session, do nothing.
+            if (currentEditingIndex === indexToLoad) {
+                // Optionally, add a visual cue or message that it's already loaded.
+                return;
+            }
+
+            // Confirm if there are unsaved changes
+            if (isRunning || !compareData(data, Array(behaviors.length).fill(0).map(() => Array(TOTAL_INTERVALS).fill(0))) || generalNotesTextarea.value.trim() !== '') {
+                if (!confirm('您目前有未儲存的觀察數據，載入舊記錄將會清除目前的數據。確定要載入嗎？')) {
+                    return;
+                }
+            }
+
             currentEditingIndex = indexToLoad;
             const sessionToLoad = allSessionsData[indexToLoad];
             
             activityNameInput.value = sessionToLoad.activityName;
             generalNotesTextarea.value = sessionToLoad.generalNotes;
-            data = JSON.parse(JSON.stringify(sessionToLoad.data));
+            data = JSON.parse(JSON.stringify(sessionToLoad.data)); // Deep copy
             
             behaviors.forEach((_, rowIndex) => {
                 sessionToLoad.data[rowIndex].forEach((count, colIndex) => {
@@ -533,28 +639,42 @@
                 updateTotal(rowIndex);
             });
 
-            resetTimerUI();
-            updateCompletedSessionsUI();
-            updateSaveButtonUI();
-            saveAndNextBtn.disabled = false;
+            resetTimerUI(); // Ensure timer is reset when loading a session
+            updateCompletedSessionsUI(); // Update UI to highlight editing session
+            updateSaveButtonUI(); // Change button text to "儲存更新記錄"
+            saveAndNextBtn.disabled = false; // Enable save button immediately for editing
+        }
+
+        // Helper function to compare current data with an empty state
+        function compareData(currentData, emptyData) {
+            if (currentData.length !== emptyData.length) return false;
+            for (let i = 0; i < currentData.length; i++) {
+                if (currentData[i].length !== emptyData[i].length) return false;
+                for (let j = 0; j < currentData[i].length; j++) {
+                    if (currentData[i][j] !== emptyData[i][j]) return false;
+                }
+            }
+            return true;
         }
         
         function handleDeleteSession(event) {
-            event.stopPropagation();
+            event.stopPropagation(); // Prevent triggering handleSessionSelect
             const button = event.currentTarget;
             const indexToDelete = parseInt(button.dataset.sessionIndex);
 
             if (confirm(`您確定要刪除「${allSessionsData[indexToDelete].activityName}」這筆觀察記錄嗎？此操作無法復原。`)) {
                 allSessionsData.splice(indexToDelete, 1);
                 
-                if (currentEditingIndex === indexToDelete) {
-                    initializeCurrentSession();
-                } else {
-                    if (currentEditingIndex !== null && currentEditingIndex > indexToDelete) {
+                if (currentEditingIndex !== null) {
+                    if (currentEditingIndex === indexToDelete) {
+                        // If the deleted session was the one being edited, reset to new session mode
+                        initializeCurrentSession();
+                    } else if (currentEditingIndex > indexToDelete) {
+                        // If deleting a session *before* the currently edited one, adjust the index
                         currentEditingIndex--;
                     }
-                    updateCompletedSessionsUI();
                 }
+                updateCompletedSessionsUI(); // Re-render the list
             }
         }
 
@@ -612,11 +732,11 @@
 
             let allSessionsHTML = '';
             allSessionsData.forEach((session, index) => {
-                let detailedTableHTML = `<div class="report-detailed-table"><table border="1"><thead><tr><th>行為項目</th>`;
+                let detailedTableHTML = `<div class="report-detailed-table"><table border="1"><thead><tr><th class="behavior-label">行為項目</th>`; // Added behavior-label
                 timeIntervals.forEach(interval => detailedTableHTML += `<th>${interval}</th>`);
                 detailedTableHTML += `<th>總次數</th></tr></thead><tbody>`;
                 behaviors.forEach((behavior, rowIndex) => {
-                    detailedTableHTML += `<tr><td>${behavior}</td>`;
+                    detailedTableHTML += `<tr><td class="behavior-label">${behavior}</td>`; // Added behavior-label
                     let total = 0;
                     session.data[rowIndex].forEach(count => { detailedTableHTML += `<td>${count}</td>`; total += count; });
                     detailedTableHTML += `<td><b>${total}</b></td></tr>`;
@@ -647,6 +767,7 @@
                 </div>
                 ${allSessionsHTML}
                 <div class="report-buttons">
+                    <button id="exportImageBtn"><i class="fa-solid fa-image"></i>匯出為圖檔</button>
                     <button id="exportTxtBtn"><i class="fa-solid fa-file-lines"></i>匯出為 TXT</button>
                     <button id="exportPdfBtn"><i class="fa-solid fa-file-pdf"></i>匯出為 PDF</button>
                     <button id="closeReportBtn"><i class="fa-solid fa-xmark"></i>關閉</button>
@@ -655,8 +776,11 @@
             
             reportContent.innerHTML = fullReportHTML;
             reportOverlay.style.display = 'flex';
+            
+            // Add event listeners for the generated buttons
             document.getElementById('exportTxtBtn').addEventListener('click', () => { syncReportNotes(); exportToTxt(); });
             document.getElementById('exportPdfBtn').addEventListener('click', () => { syncReportNotes(); window.print(); });
+            document.getElementById('exportImageBtn').addEventListener('click', () => { syncReportNotes(); exportToImage(); });
             document.getElementById('closeReportBtn').addEventListener('click', () => { syncReportNotes(); reportOverlay.style.display = 'none'; updateCompletedSessionsUI(); });
         }
 
@@ -676,10 +800,11 @@
             textContent += `報告產生日期: ${reportDate}\n`;
             textContent += '========================================\n\n';
 
+            // Helper for consistent padding, considering Chinese characters take more space
             const padEnd = (str, length) => {
                 let s = String(str);
-                const chineseChars = s.match(/[\u4e00-\u9fa5]/g) || [];
-                const effectiveLength = s.length + (chineseChars ? chineseChars.length : 0);
+                const chineseChars = (s.match(/[\u4e00-\u9fa5]/g) || []).length;
+                const effectiveLength = s.length + chineseChars; // Each Chinese char roughly takes 2 English char width
                 const paddingNeeded = length > effectiveLength ? length - effectiveLength : 0;
                 return s + ' '.repeat(paddingNeeded);
             };
@@ -697,7 +822,7 @@
                 timeIntervals.forEach(interval => { tableHeaderTxt += padStart(interval, 5); });
                 tableHeaderTxt += padStart('總次數', 8);
                 textContent += tableHeaderTxt + '\n';
-                textContent += '-'.repeat(tableHeaderTxt.length - 10) + '\n';
+                textContent += '-'.repeat(tableHeaderTxt.length - 10) + '\n'; // Adjust separator length
 
                 behaviors.forEach((behavior, rowIndex) => {
                     let rowTxt = padEnd(behavior, 25);
@@ -715,17 +840,63 @@
             saveAs(blob, `${subjectName}_多筆綜合觀察報告.txt`);
         }
 
+        function exportToImage() {
+            if (typeof html2canvas === 'undefined' || typeof saveAs === 'undefined') {
+                alert('圖檔匯出工具載入失敗，請檢查網路連線並刷新頁面重試。');
+                return;
+            }
+
+            const reportEl = document.getElementById('reportContent');
+            const subjectName = subjectNameInput.value.trim() || '觀察報告';
+            const reportDate = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '');
+
+            // Temporarily hide buttons for the screenshot
+            const reportButtons = reportEl.querySelector('.report-buttons');
+            const originalDisplay = reportButtons.style.display;
+            reportButtons.style.display = 'none';
+
+            // Temporarily adjust report content height/overflow to ensure full content is captured
+            const originalReportContentMaxHeight = reportEl.style.maxHeight;
+            const originalReportContentOverflowY = reportEl.style.overflowY;
+            reportEl.style.maxHeight = 'fit-content'; // Allow content to determine height
+            reportEl.style.overflowY = 'visible'; // Ensure all content is visible for capture
+
+            html2canvas(reportEl, { 
+                scale: 2, // Increase scale for higher resolution image
+                useCORS: true,
+                // windowWidth: reportEl.scrollWidth, // Try to capture full scrollable width if needed
+                // windowHeight: reportEl.scrollHeight,
+            }).then(canvas => {
+                // Restore original styles
+                reportButtons.style.display = originalDisplay;
+                reportEl.style.maxHeight = originalReportContentMaxHeight;
+                reportEl.style.overflowY = originalReportContentOverflowY;
+                
+                canvas.toBlob(function(blob) {
+                    saveAs(blob, `${subjectName}_綜合觀察報告_${reportDate}.png`);
+                }, 'image/png');
+            }).catch(error => {
+                console.error('Error generating image:', error);
+                alert('匯出圖檔失敗，請稍後再試。');
+                // Ensure buttons and styles are restored even on error
+                reportButtons.style.display = originalDisplay;
+                reportEl.style.maxHeight = originalReportContentMaxHeight;
+                reportEl.style.overflowY = originalReportContentOverflowY;
+            });
+        }
+
+
         function handleStartPauseResume() {
             if (!isRunning) {
                 if (currentEditingIndex !== null) {
                     if (!confirm('您正在編輯舊記錄。開始新的計時將會清空目前表格，並切換回新增模式。確定要開始嗎？')) {
                         return;
                     }
-                    initializeCurrentSession();
+                    initializeCurrentSession(); // Reset to a fresh session
                 }
                 isRunning = true;
                 sessionStartTime = new Date();
-                saveAndNextBtn.disabled = false;
+                saveAndNextBtn.disabled = false; // Enable save button when timer starts
                 startBtnText.textContent = '暫停';
                 startBtnIcon.innerHTML = '<i class="fa-solid fa-pause"></i>';
                 statusMessage.textContent = `進行中: 區間 1 / ${TOTAL_INTERVALS}`;
@@ -761,7 +932,7 @@
                     endObservation();
                 } else {
                     timeLeft = INTERVAL_DURATION;
-                    timerDisplay.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> 00:${timeLeft}`;
+                    timerDisplay.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> 00:${timeLeft.toString().padStart(2, '0')}`;
                     timerDisplay.style.color = '#3498db';
                     highlightCurrentColumn();
                     statusMessage.textContent = `進行中: 區間 ${currentIntervalIndex + 1} / ${TOTAL_INTERVALS}`;
@@ -789,69 +960,111 @@
         }
         
         function setupModalLogic() {
+            // Re-fetch DOM elements as they might be null if not in this context (e.g. single page vs multi page)
             const helpModalHeader = document.getElementById('helpModalHeader');
             const resizeHandle = document.getElementById('resizeHandle');
 
-            const makeInteractive = (element, target, mode) => {
-                let isInteracting = false;
-                let initialX, initialY, initialLeft, initialTop, initialWidth, initialHeight;
+            const makeInteractive = (element, header, handle) => {
+                let isDragging = false;
+                let isResizing = false;
+                let offsetX, offsetY, startX, startY, startWidth, startHeight;
 
-                const startInteraction = (e) => {
-                    isInteracting = true;
-                    const event = e.touches ? e.touches[0] : e;
-                    
-                    initialX = event.clientX;
-                    initialY = event.clientY;
-                    
-                    const rect = target.getBoundingClientRect();
-                    target.style.transform = 'none';
-                    target.style.left = `${rect.left}px`;
-                    target.style.top = `${rect.top}px`;
-                    
-                    initialLeft = rect.left;
-                    initialTop = rect.top;
-                    initialWidth = rect.width;
-                    initialHeight = rect.height;
-
+                const getEventCoords = (e) => {
+                    return e.touches ? e.touches[0] : e;
+                };
+                
+                const onDragStart = (e) => {
+                    isDragging = true;
+                    const coords = getEventCoords(e);
+                    const rect = element.getBoundingClientRect();
+                    element.style.transform = 'none'; // Remove transform for direct left/top manipulation
+                    element.style.left = `${rect.left}px`;
+                    element.style.top = `${rect.top}px`;
+                    offsetX = coords.clientX - rect.left;
+                    offsetY = coords.clientY - rect.top;
+                    header.style.cursor = 'grabbing';
                     document.body.style.userSelect = 'none';
-                    document.addEventListener('mousemove', onInteractionMove);
-                    document.addEventListener('touchmove', onInteractionMove, { passive: false });
-                    document.addEventListener('mouseup', endInteraction);
-                    document.addEventListener('touchend', endInteraction);
+                    document.addEventListener('mousemove', onDragMove);
+                    document.addEventListener('mouseup', onDragEnd);
+                    document.addEventListener('touchmove', onDragMove, { passive: false });
+                    document.addEventListener('touchend', onDragEnd);
+                    if (e.type === 'touchstart') e.preventDefault();
                 };
 
-                const onInteractionMove = (e) => {
-                    if (!isInteracting) return;
-                    e.preventDefault(); 
-
-                    const event = e.touches ? e.touches[0] : e;
-                    const dx = event.clientX - initialX;
-                    const dy = event.clientY - initialY;
-
-                    if (mode === 'drag') {
-                        target.style.left = `${initialLeft + dx}px`;
-                        target.style.top = `${initialTop + dy}px`;
-                    } else if (mode === 'resize') {
-                        target.style.width = `${initialWidth + dx}px`;
-                        target.style.height = `${initialHeight + dy}px`;
-                    }
+                const onDragMove = (e) => {
+                    if (!isDragging) return;
+                    const coords = getEventCoords(e);
+                    let newX = coords.clientX - offsetX;
+                    let newY = coords.clientY - offsetY;
+                    element.style.left = `${newX}px`;
+                    element.style.top = `${newY}px`;
+                    if (e.type === 'touchmove') e.preventDefault();
                 };
-                
-                const endInteraction = () => {
-                    isInteracting = false;
+
+                const onDragEnd = () => {
+                    isDragging = false;
+                    header.style.cursor = 'move';
                     document.body.style.userSelect = '';
-                    document.removeEventListener('mousemove', onInteractionMove);
-                    document.removeEventListener('touchmove', onInteractionMove);
-                    document.removeEventListener('mouseup', endInteraction);
-                    document.removeEventListener('touchend', endInteraction);
+                    document.removeEventListener('mousemove', onDragMove);
+                    document.removeEventListener('mouseup', onDragEnd);
+                    document.removeEventListener('touchmove', onDragMove);
+                    document.removeEventListener('touchend', onDragEnd);
+                };
+
+                const onResizeStart = (e) => {
+                    isResizing = true;
+                    const coords = getEventCoords(e);
+                    startX = coords.clientX;
+                    startY = coords.clientY;
+                    startWidth = parseInt(document.defaultView.getComputedStyle(element).width, 10);
+                    startHeight = parseInt(document.defaultView.getComputedStyle(element).height, 10);
+                    document.body.style.userSelect = 'none';
+                    document.addEventListener('mousemove', onResizeMove);
+                    document.addEventListener('mouseup', onResizeEnd);
+                    document.addEventListener('touchmove', onResizeMove, { passive: false });
+                    document.addEventListener('touchend', onResizeEnd);
+                    e.preventDefault();
+                };
+
+                const onResizeMove = (e) => {
+                    if (!isResizing) return;
+                    const coords = getEventCoords(e);
+                    // Get current computed styles for dynamic min/max
+                    const computedStyle = document.defaultView.getComputedStyle(element);
+                    const minWidth = parseInt(computedStyle.minWidth) || 350; // Use CSS min-width or default
+                    const minHeight = parseInt(computedStyle.minHeight) || 300; // Use CSS min-height or default
+
+                    const newWidth = Math.max(minWidth, startWidth + (coords.clientX - startX));
+                    const newHeight = Math.max(minHeight, startHeight + (coords.clientY - startY));
+                    element.style.width = `${newWidth}px`;
+                    element.style.height = `${newHeight}px`;
+                    if (e.type === 'touchmove') e.preventDefault();
+                };
+
+                const onResizeEnd = () => {
+                    isResizing = false;
+                    document.body.style.userSelect = '';
+                    document.removeEventListener('mousemove', onResizeMove);
+                    document.removeEventListener('mouseup', onResizeEnd);
+                    document.removeEventListener('touchmove', onResizeMove);
+                    document.removeEventListener('touchend', onResizeEnd);
                 };
                 
-                element.addEventListener('mousedown', startInteraction);
-                element.addEventListener('touchstart', startInteraction);
+                // Add event listeners for drag
+                header.addEventListener('mousedown', onDragStart);
+                header.addEventListener('touchstart', onDragStart, { passive: false }); // Add passive:false for touch
+                
+                // Add event listeners for resize
+                if (handle) {
+                    handle.addEventListener('mousedown', onResizeStart);
+                    handle.addEventListener('touchstart', onResizeStart, { passive: false }); // Add passive:false for touch
+                }
             };
 
-            makeInteractive(helpModalHeader, helpModal, 'drag');
-            makeInteractive(resizeHandle, helpModal, 'resize');
+            // Call interactive logic for the help modal
+            if (helpModal && helpModalHeader && resizeHandle) {
+                makeInteractive(helpModal, helpModalHeader, resizeHandle);
+            }
         }
 
         // --- Event Listeners and Initializer ---
@@ -861,9 +1074,15 @@
         reportBtn.addEventListener('click', generateReport);
         helpBtn.addEventListener('click', () => { document.getElementById('helpModal').style.display = 'flex'; });
         closeHelpModalBtn.addEventListener('click', () => { document.getElementById('helpModal').style.display = 'none'; });
+        // Add touchend listener for closing on mobile
+        closeHelpModalBtn.addEventListener('touchend', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            document.getElementById('helpModal').style.display = 'none';
+        }, { passive: false });
         
         initializeCurrentSession();
-        setupModalLogic();
+        setupModalLogic(); // Initialize the drag/resize logic for the help modal
     });
     </script>
 </body>
